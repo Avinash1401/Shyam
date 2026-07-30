@@ -1,0 +1,6 @@
+{
+  "name": "Shyam Panel",
+  "description": "Professional Gaming & Distribution Administration Management System",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
