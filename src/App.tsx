@@ -18,6 +18,7 @@ import { WinningDeclareView } from './components/views/WinningDeclareView';
 import { OthersActivityView } from './components/views/OthersActivityView';
 import { ProfileView } from './components/views/ProfileView';
 import { UserGamePortalView } from './components/views/UserGamePortalView';
+import { ResultSettingsView } from './components/views/ResultSettingsView';
 import { SourceCodeExportView } from './components/views/SourceCodeExportView';
 
 const MainContent: React.FC = () => {
@@ -85,6 +86,9 @@ const MainContent: React.FC = () => {
 
       case 'user_game_portal':
         return <UserGamePortalView />;
+
+      case 'result_settings':
+        return <ResultSettingsView />;
 
       case 'source_code_export':
         return <SourceCodeExportView />;

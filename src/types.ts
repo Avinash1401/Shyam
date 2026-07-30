@@ -175,5 +175,6 @@ export type NavigationPage =
   | 'declare_3d'
   | 'declare_lucky12'
   | 'user_game_portal'
+  | 'result_settings'
   | 'source_code_export'
   | 'profile';

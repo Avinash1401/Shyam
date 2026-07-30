@@ -138,6 +138,8 @@ interface AdminContextType {
   toasts: ToastMessage[];
   notifications: AppNotification[];
   unreadNotificationCount: number;
+  silenceBettingNotifications: boolean;
+  toggleSilenceBettingNotifications: () => void;
   addToast: (title: string, description: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
   removeToast: (id: string) => void;
   markNotificationAsRead: (id: string) => void;
@@ -208,6 +210,11 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [gameControls, setGameControls] = useState<GameControlConfig[]>(initialGameControls);
 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [silenceBettingNotifications, setSilenceBettingNotifications] = useState<boolean>(true);
+
+  const toggleSilenceBettingNotifications = () => {
+    setSilenceBettingNotifications((prev) => !prev);
+  };
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
     const saved = localStorage.getItem('shyam_notifications_history');
     return saved ? JSON.parse(saved) : initialNotificationsList;
@@ -398,11 +405,13 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
           if (gc.secondsRemaining <= 1) {
             // Round ended
-            addToast(
-              `Betting Closed (${gc.gameType})`,
-              `Round ${gc.currentRoundNo} timer ended. Processing round draw...`,
-              'warning'
-            );
+            if (!silenceBettingNotifications) {
+              addToast(
+                `Betting Closed (${gc.gameType})`,
+                `Round ${gc.currentRoundNo} timer ended. Processing round draw...`,
+                'warning'
+              );
+            }
 
             if (gc.mode === 'Auto') {
               const result = generateRandomResult(gc.gameType);
@@ -909,6 +918,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         toasts,
         notifications,
         unreadNotificationCount,
+        silenceBettingNotifications,
+        toggleSilenceBettingNotifications,
         addToast,
         removeToast,
         markNotificationAsRead,

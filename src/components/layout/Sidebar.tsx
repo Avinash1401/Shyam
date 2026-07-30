@@ -26,6 +26,7 @@ import {
   Sparkles,
   Gamepad2,
   Code2,
+  SlidersHorizontal,
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
@@ -237,6 +238,18 @@ export const Sidebar: React.FC = () => {
               >
                 <Gamepad2 className="w-4 h-4 text-emerald-400 animate-pulse" />
                 <span>Player Game Portal</span>
+              </button>
+
+              <button
+                onClick={() => navigateTo('result_settings')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all ${
+                  isNavActive('result_settings')
+                    ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 shadow-sm shadow-cyan-500/10'
+                    : 'hover:bg-slate-800/60 hover:text-white text-cyan-400 font-semibold'
+                }`}
+              >
+                <SlidersHorizontal className="w-4 h-4 text-cyan-400" />
+                <span>Result Mode & Lock</span>
               </button>
 
               <button
