@@ -15,6 +15,43 @@ export interface UserAccount {
   email?: string;
   createdAt: string;
   lastLogin?: string;
+  password?: string;
+  referralCode?: string;
+  referredBy?: string;
+  referralEarnings?: number;
+}
+
+export interface DepositRequest {
+  id: string;
+  username: string;
+  userRole: UserRole;
+  amount: number;
+  paymentMethod: 'UPI' | 'Bank Transfer' | 'Crypto' | 'USDT';
+  utrNumber: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  createdAt: string;
+  remark?: string;
+}
+
+export interface WithdrawalRequest {
+  id: string;
+  username: string;
+  userRole: UserRole;
+  amount: number;
+  paymentMethod: 'UPI' | 'Bank Transfer';
+  accountDetails: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  createdAt: string;
+  remark?: string;
+}
+
+export interface ReferralRecord {
+  id: string;
+  referrerUsername: string;
+  referredUsername: string;
+  referralCode: string;
+  bonusPoints: number;
+  date: string;
 }
 
 export interface OnlinePlayer {
@@ -177,4 +214,12 @@ export type NavigationPage =
   | 'user_game_portal'
   | 'result_settings'
   | 'source_code_export'
-  | 'profile';
+  | 'profile'
+  | 'player_wallet'
+  | 'player_deposit'
+  | 'player_withdrawal'
+  | 'player_referral'
+  | 'player_support'
+  | 'admin_deposits'
+  | 'admin_withdrawals'
+  | 'admin_referrals';

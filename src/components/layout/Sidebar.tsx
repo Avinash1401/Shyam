@@ -27,6 +27,8 @@ import {
   Gamepad2,
   Code2,
   SlidersHorizontal,
+  ArrowDownRight,
+  Gift,
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
@@ -35,11 +37,13 @@ export const Sidebar: React.FC = () => {
     setCurrentPage,
     sidebarOpen,
     setSidebarOpen,
+    switchSessionRole,
     superDistributers,
     distributers,
     retailers,
     users,
     onlinePlayers,
+    depositRequests,
   } = useAdmin();
 
   // Collapsible dropdown states
@@ -574,15 +578,57 @@ export const Sidebar: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* FINANCIALS & REFERRALS */}
+          <div className="pt-2 border-t border-slate-800 space-y-1">
+            <button
+              onClick={() => navigateTo('admin_deposits')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                isNavActive('admin_deposits')
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <ArrowDownRight className="w-4 h-4 text-emerald-400" />
+                <span>Deposits & Withdrawals</span>
+              </div>
+              <span className="px-2 py-0.2 rounded-full text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800">
+                {depositRequests.filter((d) => d.status === 'Pending').length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => navigateTo('admin_referrals')}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                isNavActive('admin_referrals')
+                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <Gift className="w-4 h-4 text-amber-400" />
+              <span>Referral Program</span>
+            </button>
+          </div>
         </div>
 
-        {/* Footer Info */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950/60 text-xs text-slate-500 flex items-center justify-between">
-          <div>
-            <span className="text-slate-400 font-semibold block">Shyam Panel v3.5</span>
-            <span className="text-[10px]">Secure Encrypted</span>
+        {/* Footer Info & Switch to Player View */}
+        <div className="p-3 border-t border-slate-800 bg-slate-950/60 space-y-2">
+          <button
+            onClick={() => switchSessionRole('Player')}
+            className="w-full py-2 rounded-xl bg-slate-900 border border-slate-800 text-cyan-400 text-xs font-bold hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
+          >
+            <Gamepad2 className="w-4 h-4" />
+            <span>Switch to Player Portal</span>
+          </button>
+
+          <div className="text-xs text-slate-500 flex items-center justify-between px-1">
+            <div>
+              <span className="text-slate-400 font-semibold block">Shyam Panel v3.5</span>
+              <span className="text-[10px]">Production Platform</span>
+            </div>
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
           </div>
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
         </div>
       </aside>
     </>

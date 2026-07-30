@@ -2,7 +2,10 @@ import React from 'react';
 import { AdminProvider, useAdmin } from './context/AdminContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { Navbar } from './components/layout/Navbar';
+import { PlayerHeader } from './components/layout/PlayerHeader';
+import { PlayerSidebar } from './components/layout/PlayerSidebar';
 import { ToastContainer } from './components/common/ToastContainer';
+import { AuthScreen } from './components/auth/AuthScreen';
 
 // Views
 import { DashboardView } from './components/views/DashboardView';
@@ -21,11 +24,31 @@ import { UserGamePortalView } from './components/views/UserGamePortalView';
 import { ResultSettingsView } from './components/views/ResultSettingsView';
 import { SourceCodeExportView } from './components/views/SourceCodeExportView';
 
+// Player Panel Dedicated Views
+import { PlayerWalletView } from './components/views/PlayerWalletView';
+import { PlayerReferralView } from './components/views/PlayerReferralView';
+import { PlayerSupportView } from './components/views/PlayerSupportView';
+
+// Admin Panel Financial Views
+import { AdminDepositsView } from './components/views/AdminDepositsView';
+import { AdminReferralsView } from './components/views/AdminReferralsView';
+
 const MainContent: React.FC = () => {
-  const { currentPage } = useAdmin();
+  const { currentPage, isLoggedIn, activeRole } = useAdmin();
+
+  // 1. Unauthenticated state: show AuthScreen (Login/Register/OTP Reset)
+  if (!isLoggedIn) {
+    return (
+      <>
+        <AuthScreen />
+        <ToastContainer />
+      </>
+    );
+  }
 
   const renderView = () => {
     switch (currentPage) {
+      // Admin Dashboard & Management
       case 'dashboard':
         return <DashboardView />;
 
@@ -96,11 +119,48 @@ const MainContent: React.FC = () => {
       case 'profile':
         return <ProfileView />;
 
+      // Player Panel Dedicated Views
+      case 'player_wallet':
+      case 'player_deposit':
+      case 'player_withdrawal':
+        return <PlayerWalletView />;
+
+      case 'player_referral':
+        return <PlayerReferralView />;
+
+      case 'player_support':
+        return <PlayerSupportView />;
+
+      // Admin Panel Financial & Referral Views
+      case 'admin_deposits':
+      case 'admin_withdrawals':
+        return <AdminDepositsView />;
+
+      case 'admin_referrals':
+        return <AdminReferralsView />;
+
       default:
-        return <DashboardView />;
+        return activeRole === 'Player' ? <UserGamePortalView /> : <DashboardView />;
     }
   };
 
+  // 2. Player Panel Layout
+  if (activeRole === 'Player') {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
+        <PlayerHeader />
+        <div className="flex flex-1 min-w-0">
+          <PlayerSidebar />
+          <main className="flex-1 p-4 lg:p-6 overflow-y-auto max-w-7xl w-full mx-auto pl-24 lg:pl-68 transition-all">
+            {renderView()}
+          </main>
+        </div>
+        <ToastContainer />
+      </div>
+    );
+  }
+
+  // 3. Admin Panel Layout
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex font-sans selection:bg-cyan-500 selection:text-slate-950">
       <Sidebar />

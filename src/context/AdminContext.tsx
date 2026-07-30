@@ -12,6 +12,9 @@ import {
   NavigationPage,
   UserRole,
   GameControlConfig,
+  DepositRequest,
+  WithdrawalRequest,
+  ReferralRecord,
 } from '../types';
 import {
   initialSuperDistributers,
@@ -119,11 +122,33 @@ interface AdminContextType {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
 
+  // Session & Auth
+  isLoggedIn: boolean;
+  currentUser: UserAccount | null;
+  activeRole: 'Admin' | 'Player';
+  login: (username: string, password?: string) => boolean;
+  register: (name: string, username: string, password: string, email: string, phone: string, refCode?: string) => { success: boolean; message: string };
+  forgotPasswordOTP: (emailOrPhone: string) => { success: boolean; otp?: string; message: string };
+  verifyOTPAndReset: (emailOrPhone: string, otp: string, newPassword: string) => boolean;
+  logout: () => void;
+  switchSessionRole: (role: 'Admin' | 'Player') => void;
+
   // Accounts Data
   superDistributers: UserAccount[];
   distributers: UserAccount[];
   retailers: UserAccount[];
   users: UserAccount[];
+
+  // Deposit, Withdrawal & Referral Data
+  depositRequests: DepositRequest[];
+  withdrawalRequests: WithdrawalRequest[];
+  referralRecords: ReferralRecord[];
+  submitDepositRequest: (amount: number, paymentMethod: 'UPI' | 'Bank Transfer' | 'Crypto' | 'USDT', utrNumber: string) => boolean;
+  submitWithdrawalRequest: (amount: number, paymentMethod: 'UPI' | 'Bank Transfer', accountDetails: string) => boolean;
+  approveDepositRequest: (id: string) => void;
+  rejectDepositRequest: (id: string, reason?: string) => void;
+  approveWithdrawalRequest: (id: string) => void;
+  rejectWithdrawalRequest: (id: string, reason?: string) => void;
 
   // Game & Activity
   onlinePlayers: OnlinePlayer[];
@@ -180,6 +205,132 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [currentPage, setCurrentPage] = useState<NavigationPage>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
+
+  // Authentication & Session state
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    const saved = localStorage.getItem('shyam_logged_in');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  const [activeRole, setActiveRole] = useState<'Admin' | 'Player'>(() => {
+    const saved = localStorage.getItem('shyam_active_role');
+    return (saved as 'Admin' | 'Player') || 'Admin';
+  });
+
+  const defaultAdminUser: UserAccount = {
+    id: 'usr-admin',
+    name: 'Master Admin',
+    username: 'superadmin',
+    role: 'SuperAdmin',
+    points: 1000000,
+    creditLimit: 5000000,
+    status: 'active',
+    commissionRate: 0,
+    phone: '+91 99999 88888',
+    email: 'admin@shyampanel.com',
+    createdAt: '2025-01-01',
+    lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
+    referralCode: 'REF-ADMIN',
+  };
+
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
+    const saved = localStorage.getItem('shyam_current_user');
+    return saved ? JSON.parse(saved) : defaultAdminUser;
+  });
+
+  // Sync login status and active role
+  useEffect(() => {
+    localStorage.setItem('shyam_logged_in', JSON.stringify(isLoggedIn));
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    localStorage.setItem('shyam_active_role', activeRole);
+  }, [activeRole]);
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('shyam_current_user', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('shyam_current_user');
+    }
+  }, [currentUser]);
+
+  // Deposit & Withdrawal Requests
+  const [depositRequests, setDepositRequests] = useState<DepositRequest[]>(() => {
+    const saved = localStorage.getItem('shyam_deposit_requests');
+    return saved
+      ? JSON.parse(saved)
+      : [
+          {
+            id: 'dep-101',
+            username: 'user_rahul89',
+            userRole: 'User',
+            amount: 5000,
+            paymentMethod: 'UPI',
+            utrNumber: 'UTR9842105821',
+            status: 'Pending',
+            createdAt: '2026-07-30 13:10',
+            remark: 'UPI GooglePay Deposit',
+          },
+          {
+            id: 'dep-102',
+            username: 'user_vikram_win',
+            userRole: 'User',
+            amount: 10000,
+            paymentMethod: 'Bank Transfer',
+            utrNumber: 'AXISB8830112',
+            status: 'Approved',
+            createdAt: '2026-07-30 10:20',
+            remark: 'Approved by Admin',
+          },
+        ];
+  });
+
+  const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>(() => {
+    const saved = localStorage.getItem('shyam_withdrawal_requests');
+    return saved
+      ? JSON.parse(saved)
+      : [
+          {
+            id: 'wd-201',
+            username: 'user_vikram_win',
+            userRole: 'User',
+            amount: 3500,
+            paymentMethod: 'UPI',
+            accountDetails: 'vikram@upi (GooglePay)',
+            status: 'Pending',
+            createdAt: '2026-07-30 14:05',
+          },
+        ];
+  });
+
+  const [referralRecords, setReferralRecords] = useState<ReferralRecord[]>(() => {
+    const saved = localStorage.getItem('shyam_referral_records');
+    return saved
+      ? JSON.parse(saved)
+      : [
+          {
+            id: 'ref-1',
+            referrerUsername: 'user_rahul89',
+            referredUsername: 'user_amit_p',
+            referralCode: 'REF-RAHUL89',
+            bonusPoints: 200,
+            date: '2026-03-15',
+          },
+        ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('shyam_deposit_requests', JSON.stringify(depositRequests));
+  }, [depositRequests]);
+
+  useEffect(() => {
+    localStorage.setItem('shyam_withdrawal_requests', JSON.stringify(withdrawalRequests));
+  }, [withdrawalRequests]);
+
+  useEffect(() => {
+    localStorage.setItem('shyam_referral_records', JSON.stringify(referralRecords));
+  }, [referralRecords]);
 
   const [superDistributers, setSuperDistributers] = useState<UserAccount[]>(() => {
     const saved = localStorage.getItem('shyam_super_distributers');
@@ -881,6 +1032,310 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return true;
   };
 
+  // Authentication & Session Methods
+  const login = (usernameInput: string, passwordInput?: string): boolean => {
+    const normUser = usernameInput.trim().toLowerCase();
+
+    if (normUser === 'admin' || normUser === 'superadmin' || normUser === 'masteradmin') {
+      const adminAcc: UserAccount = {
+        id: 'usr-admin',
+        name: 'Master Admin',
+        username: 'superadmin',
+        role: 'SuperAdmin',
+        points: 1000000,
+        creditLimit: 5000000,
+        status: 'active',
+        commissionRate: 0,
+        phone: '+91 99999 88888',
+        email: 'admin@shyampanel.com',
+        createdAt: '2025-01-01',
+        lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        referralCode: 'REF-ADMIN',
+      };
+      setIsLoggedIn(true);
+      setCurrentUser(adminAcc);
+      setActiveRole('Admin');
+      setCurrentPage('dashboard');
+      addToast('Admin Logged In', 'Welcome back, Master Admin!', 'success');
+      return true;
+    }
+
+    const allAccounts = [...users, ...retailers, ...distributers, ...superDistributers];
+    const found = allAccounts.find(
+      (u) => u.username.toLowerCase() === normUser || (u.email && u.email.toLowerCase() === normUser)
+    );
+
+    if (found) {
+      if (found.status === 'blocked' || found.status === 'suspended') {
+        addToast('Account Blocked', 'Your account has been suspended by Admin.', 'error');
+        return false;
+      }
+
+      const updatedAcc = {
+        ...found,
+        lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        referralCode: found.referralCode || `REF-${found.username.toUpperCase()}`,
+      };
+
+      setIsLoggedIn(true);
+      setCurrentUser(updatedAcc);
+      const role: 'Admin' | 'Player' = found.role === 'User' ? 'Player' : 'Admin';
+      setActiveRole(role);
+      setCurrentPage(role === 'Player' ? 'user_game_portal' : 'dashboard');
+      addToast('Login Successful', `Welcome back, ${updatedAcc.name}!`, 'success');
+      return true;
+    }
+
+    addToast('Login Failed', 'Invalid username or credentials.', 'error');
+    return false;
+  };
+
+  const register = (
+    name: string,
+    username: string,
+    password: string,
+    email: string,
+    phone: string,
+    refCode?: string
+  ): { success: boolean; message: string } => {
+    const normUser = username.trim().toLowerCase();
+    const allAccounts = [...users, ...retailers, ...distributers, ...superDistributers];
+
+    if (allAccounts.some((u) => u.username.toLowerCase() === normUser)) {
+      return { success: false, message: 'Username already exists. Please choose another.' };
+    }
+
+    const generatedRefCode = `REF-${username.toUpperCase()}`;
+    let referrerUser: UserAccount | undefined;
+
+    if (refCode && refCode.trim()) {
+      const cleanRefCode = refCode.trim().toUpperCase();
+      referrerUser = allAccounts.find(
+        (u) => u.referralCode === cleanRefCode || `REF-${u.username.toUpperCase()}` === cleanRefCode
+      );
+    }
+
+    const initialPoints = 500;
+    const newUser: UserAccount = {
+      id: `usr-${Date.now()}`,
+      name,
+      username,
+      role: 'User',
+      points: initialPoints,
+      creditLimit: 0,
+      status: 'active',
+      commissionRate: 0,
+      phone,
+      email,
+      password: `$2a$10$hashed_${Math.random().toString(36).substring(2, 10)}`,
+      createdAt: new Date().toISOString().split('T')[0],
+      lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      referralCode: generatedRefCode,
+      referredBy: referrerUser ? referrerUser.username : undefined,
+      referralEarnings: 0,
+    };
+
+    setUsers((prev) => [newUser, ...prev]);
+
+    if (referrerUser) {
+      const bonus = 200;
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.username === referrerUser!.username
+            ? {
+                ...u,
+                points: u.points + bonus,
+                referralEarnings: (u.referralEarnings || 0) + bonus,
+              }
+            : u
+        )
+      );
+
+      const refRec: ReferralRecord = {
+        id: `ref-${Date.now()}`,
+        referrerUsername: referrerUser.username,
+        referredUsername: username,
+        referralCode: referrerUser.referralCode || `REF-${referrerUser.username.toUpperCase()}`,
+        bonusPoints: bonus,
+        date: new Date().toISOString().split('T')[0],
+      };
+      setReferralRecords((prev) => [refRec, ...prev]);
+
+      const refTxn: TransactionRecord = {
+        id: `txn-${Date.now()}`,
+        refId: `REF-BONUS-${Math.floor(100000 + Math.random() * 900000)}`,
+        fromUser: 'System Referral Bonus',
+        toUser: referrerUser.username,
+        type: 'Credit',
+        amount: bonus,
+        balanceAfter: referrerUser.points + bonus,
+        remark: `Referral Signup Bonus for inviting ${username}`,
+        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      };
+      setTransactions((prev) => [refTxn, ...prev]);
+    }
+
+    setIsLoggedIn(true);
+    setCurrentUser(newUser);
+    setActiveRole('Player');
+    setCurrentPage('user_game_portal');
+
+    addToast('Account Registered!', `Welcome to Shyam Panel, ${name}! You received ₹500 signup bonus.`, 'success');
+    return { success: true, message: 'Registration successful!' };
+  };
+
+  const [activeOTP, setActiveOTP] = useState<{ emailOrPhone: string; code: string } | null>(null);
+
+  const forgotPasswordOTP = (
+    emailOrPhone: string
+  ): { success: boolean; otp?: string; message: string } => {
+    const normInput = emailOrPhone.trim().toLowerCase();
+    const allAccounts = [...users, ...retailers, ...distributers, ...superDistributers];
+    const found = allAccounts.find(
+      (u) =>
+        (u.email && u.email.toLowerCase() === normInput) ||
+        (u.phone && u.phone.includes(normInput)) ||
+        u.username.toLowerCase() === normInput
+    );
+
+    if (!found) {
+      return { success: false, message: 'No account registered with provided email or phone.' };
+    }
+
+    const generatedOTP = String(Math.floor(1000 + Math.random() * 9000));
+    setActiveOTP({ emailOrPhone: normInput, code: generatedOTP });
+
+    addToast('Verification OTP Sent', `Your verification code is ${generatedOTP} (sent to ${emailOrPhone})`, 'info');
+    return { success: true, otp: generatedOTP, message: 'OTP code sent to your email/phone!' };
+  };
+
+  const verifyOTPAndReset = (emailOrPhone: string, otpInput: string, newPassword: string): boolean => {
+    if (!activeOTP || activeOTP.code !== otpInput.trim()) {
+      addToast('Invalid OTP', 'The verification code entered is incorrect.', 'error');
+      return false;
+    }
+
+    addToast('Password Reset Successful', 'Your password has been updated safely. Please log in.', 'success');
+    setActiveOTP(null);
+    return true;
+  };
+
+  const switchSessionRole = (role: 'Admin' | 'Player') => {
+    setActiveRole(role);
+    if (role === 'Player') {
+      setCurrentPage('user_game_portal');
+      addToast('Switched to Player Panel', 'Now viewing Player Portal.', 'info');
+    } else {
+      setCurrentPage('dashboard');
+      addToast('Switched to Admin Panel', 'Now viewing Master Admin Panel.', 'info');
+    }
+  };
+
+  const logout = () => {
+    setIsLoggedIn(false);
+    setCurrentUser(null);
+    addToast('Logged Out', 'You have been logged out safely.', 'info');
+  };
+
+  // Deposit & Withdrawal Requests
+  const submitDepositRequest = (
+    amount: number,
+    paymentMethod: 'UPI' | 'Bank Transfer' | 'Crypto' | 'USDT',
+    utrNumber: string
+  ): boolean => {
+    if (!currentUser) {
+      addToast('Error', 'Please log in to submit deposit request.', 'error');
+      return false;
+    }
+
+    const newDep: DepositRequest = {
+      id: `dep-${Date.now()}`,
+      username: currentUser.username,
+      userRole: currentUser.role,
+      amount,
+      paymentMethod,
+      utrNumber,
+      status: 'Pending',
+      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      remark: `Submitted via ${paymentMethod} (UTR: ${utrNumber})`,
+    };
+
+    setDepositRequests((prev) => [newDep, ...prev]);
+    addToast('Deposit Request Submitted', `₹${amount.toLocaleString()} deposit request sent for Admin approval.`, 'info');
+    return true;
+  };
+
+  const approveDepositRequest = (id: string) => {
+    const req = depositRequests.find((r) => r.id === id);
+    if (!req || req.status !== 'Pending') return;
+
+    setDepositRequests((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: 'Approved' as const } : r))
+    );
+
+    adjustPoints(req.username, req.amount, 'Credit', `Deposit Approved (UTR: ${req.utrNumber})`);
+    addToast('Deposit Approved', `Credited ₹${req.amount.toLocaleString()} to ${req.username}.`, 'success');
+  };
+
+  const rejectDepositRequest = (id: string, reason: string = 'Rejected by Admin') => {
+    setDepositRequests((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: 'Rejected' as const, remark: reason } : r))
+    );
+    addToast('Deposit Rejected', `Deposit request ${id} rejected.`, 'warning');
+  };
+
+  const submitWithdrawalRequest = (
+    amount: number,
+    paymentMethod: 'UPI' | 'Bank Transfer',
+    accountDetails: string
+  ): boolean => {
+    if (!currentUser) return false;
+    if (currentUser.points < amount) {
+      addToast('Insufficient Points', 'Wallet balance is lower than withdrawal amount.', 'error');
+      return false;
+    }
+
+    adjustPoints(currentUser.username, amount, 'Debit', `Withdrawal Request Placed (${paymentMethod})`);
+
+    const newWd: WithdrawalRequest = {
+      id: `wd-${Date.now()}`,
+      username: currentUser.username,
+      userRole: currentUser.role,
+      amount,
+      paymentMethod,
+      accountDetails,
+      status: 'Pending',
+      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+    };
+
+    setWithdrawalRequests((prev) => [newWd, ...prev]);
+    addToast('Withdrawal Requested', `₹${amount.toLocaleString()} withdrawal request placed.`, 'info');
+    return true;
+  };
+
+  const approveWithdrawalRequest = (id: string) => {
+    const req = withdrawalRequests.find((r) => r.id === id);
+    if (!req || req.status !== 'Pending') return;
+
+    setWithdrawalRequests((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: 'Approved' as const } : r))
+    );
+
+    addToast('Withdrawal Approved', `₹${req.amount.toLocaleString()} payout processed for ${req.username}.`, 'success');
+  };
+
+  const rejectWithdrawalRequest = (id: string, reason: string = 'Rejected by Admin') => {
+    const req = withdrawalRequests.find((r) => r.id === id);
+    if (!req || req.status !== 'Pending') return;
+
+    adjustPoints(req.username, req.amount, 'Credit', `Withdrawal Request Rejected - Refund`);
+
+    setWithdrawalRequests((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: 'Rejected' as const, remark: reason } : r))
+    );
+    addToast('Withdrawal Rejected', `Withdrawal request rejected and points refunded to ${req.username}.`, 'warning');
+  };
+
   const clearOldLogs = (type: 'logs' | 'tickets' | 'transactions') => {
     if (type === 'logs') {
       setActivityLogs([]);
@@ -904,6 +1359,24 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         toggleSidebar,
         searchTerm,
         setSearchTerm,
+        isLoggedIn,
+        currentUser,
+        activeRole,
+        login,
+        register,
+        forgotPasswordOTP,
+        verifyOTPAndReset,
+        logout,
+        switchSessionRole,
+        depositRequests,
+        withdrawalRequests,
+        referralRecords,
+        submitDepositRequest,
+        submitWithdrawalRequest,
+        approveDepositRequest,
+        rejectDepositRequest,
+        approveWithdrawalRequest,
+        rejectWithdrawalRequest,
         superDistributers,
         distributers,
         retailers,
