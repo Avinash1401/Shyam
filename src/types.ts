@@ -117,6 +117,26 @@ export interface TransactionRecord {
   timestamp: string;
 }
 
+export interface AppNotification {
+  id: string;
+  title: string;
+  description: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+  timestamp: string;
+  createdAtMs: number;
+  read: boolean;
+  fingerprint: string;
+}
+
+export interface ToastMessage {
+  id: string;
+  title: string;
+  description: string;
+  type?: 'success' | 'error' | 'info' | 'warning';
+  timestamp?: string;
+  createdAtMs?: number;
+}
+
 export interface ActivityLog {
   id: string;
   username: string;

@@ -6,6 +6,8 @@ import {
   WinPercentageConfig,
   LiveResultDraw,
   TransactionRecord,
+  ToastMessage,
+  AppNotification,
   ActivityLog,
   NavigationPage,
   UserRole,
@@ -24,12 +26,38 @@ import {
   initialActivityLogs,
 } from '../data/mockData';
 
-export interface ToastMessage {
-  id: string;
-  title: string;
-  description: string;
-  type: 'success' | 'error' | 'info' | 'warning';
-}
+const initialNotificationsList: AppNotification[] = [
+  {
+    id: 'notif-1',
+    title: 'Draw Result Declared',
+    description: '2D Lottery Draw DRW-2D-9842 result declared as [89].',
+    type: 'success',
+    timestamp: '14:02',
+    createdAtMs: Date.now() - 120000,
+    read: false,
+    fingerprint: 'draw result declared|2d lottery draw drw-2d-9842 result declared as [89].',
+  },
+  {
+    id: 'notif-2',
+    title: 'Point Request Approved',
+    description: 'SuperDistributer "super_royal" credited 100,000 points.',
+    type: 'info',
+    timestamp: '13:45',
+    createdAtMs: Date.now() - 900000,
+    read: false,
+    fingerprint: 'point request approved|superdistributer "super_royal" credited 100,000 points.',
+  },
+  {
+    id: 'notif-3',
+    title: 'System Security Audit',
+    description: 'Master Admin logged in from IP 103.110.244.18.',
+    type: 'warning',
+    timestamp: '12:10',
+    createdAtMs: Date.now() - 3600000,
+    read: true,
+    fingerprint: 'system security audit|master admin logged in from ip 103.110.244.18.',
+  },
+];
 
 const initialGameControls: GameControlConfig[] = [
   {
@@ -106,10 +134,15 @@ interface AdminContextType {
   activityLogs: ActivityLog[];
   gameControls: GameControlConfig[];
 
-  // Toast
+  // Notification & Toast System
   toasts: ToastMessage[];
+  notifications: AppNotification[];
+  unreadNotificationCount: number;
   addToast: (title: string, description: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
   removeToast: (id: string) => void;
+  markNotificationAsRead: (id: string) => void;
+  markAllNotificationsAsRead: () => void;
+  clearNotificationHistory: () => void;
 
   // Real-Time Metrics
   liveBetIn: number;
@@ -175,8 +208,118 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [gameControls, setGameControls] = useState<GameControlConfig[]>(initialGameControls);
 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => {
+    const saved = localStorage.getItem('shyam_notifications_history');
+    return saved ? JSON.parse(saved) : initialNotificationsList;
+  });
 
-  // Sync to localStorage
+  // Track notifications already shown as toasts to prevent duplicates after refresh
+  const [shownNotifIds, setShownNotifIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem('shyam_shown_notif_ids');
+    return saved ? JSON.parse(saved) : ['notif-1', 'notif-2', 'notif-3'];
+  });
+
+  // Sync notifications history to localStorage
+  useEffect(() => {
+    localStorage.setItem('shyam_notifications_history', JSON.stringify(notifications));
+  }, [notifications]);
+
+  useEffect(() => {
+    localStorage.setItem('shyam_shown_notif_ids', JSON.stringify(shownNotifIds));
+  }, [shownNotifIds]);
+
+  const unreadNotificationCount = notifications.filter((n) => !n.read).length;
+
+  // Add toast with strict deduplication & 5-second auto removal (Max 3 active)
+  const addToast = (
+    title: string,
+    description: string,
+    type: 'success' | 'error' | 'info' | 'warning' = 'success'
+  ) => {
+    const normTitle = title.trim();
+    const normDesc = description.trim();
+    const fingerprint = `${normTitle.toLowerCase()}|${normDesc.toLowerCase()}`;
+
+    // 1 & 2 & 3: Check if identical active toast exists or was recently added in notification history within last 5 seconds
+    const isDuplicateActive = toasts.some(
+      (t) => t.title.trim().toLowerCase() === normTitle.toLowerCase() && t.description.trim().toLowerCase() === normDesc.toLowerCase()
+    );
+
+    const isDuplicateRecent = notifications.some(
+      (n) => n.fingerprint === fingerprint && Date.now() - n.createdAtMs < 5000
+    );
+
+    if (isDuplicateActive || isDuplicateRecent) {
+      // Prevent spam & duplicate toasts
+      return;
+    }
+
+    const notifId = `notif-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const nowMs = Date.now();
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const newNotif: AppNotification = {
+      id: notifId,
+      title: normTitle,
+      description: normDesc,
+      type,
+      timestamp: timeStr,
+      createdAtMs: nowMs,
+      read: false,
+      fingerprint,
+    };
+
+    // Update notifications history (persistent)
+    setNotifications((prev) => [newNotif, ...prev.filter((n) => n.id !== notifId)]);
+    setShownNotifIds((prev) => [...prev, notifId]);
+
+    // Update active toasts (Requirement 8: Max 3 active notifications on screen)
+    const newToast: ToastMessage = {
+      id: notifId,
+      title: normTitle,
+      description: normDesc,
+      type,
+      timestamp: timeStr,
+      createdAtMs: nowMs,
+    };
+
+    setToasts((prev) => {
+      const filtered = prev.filter((t) => t.id !== notifId);
+      const nextList = [...filtered, newToast];
+      // Keep maximum 3 active on screen
+      return nextList.slice(-3);
+    });
+
+    // Requirement 4: Automatically remove notifications after 5 seconds
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== notifId));
+    }, 5000);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  // Requirement 9 & 10: Mark as read logic
+  const markNotificationAsRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
+    // Remove from active toasts immediately when read
+    removeToast(id);
+  };
+
+  const markAllNotificationsAsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setToasts([]);
+  };
+
+  const clearNotificationHistory = () => {
+    setNotifications([]);
+    setToasts([]);
+  };
+
+  // Sync users & distributors to localStorage
   useEffect(() => {
     localStorage.setItem('shyam_super_distributers', JSON.stringify(superDistributers));
   }, [superDistributers]);
@@ -215,22 +358,6 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Security Admin PIN verification
   const verifyAdminPin = (pin: string): boolean => {
     return pin === '1234' || pin === '9999';
-  };
-
-  const addToast = (
-    title: string,
-    description: string,
-    type: 'success' | 'error' | 'info' | 'warning' = 'success'
-  ) => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { id, title, description, type }]);
-    setTimeout(() => {
-      removeToast(id);
-    }, 4500);
-  };
-
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
   // Automated Result Generator Helper for Auto Mode
@@ -780,8 +907,13 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         activityLogs,
         gameControls,
         toasts,
+        notifications,
+        unreadNotificationCount,
         addToast,
         removeToast,
+        markNotificationAsRead,
+        markAllNotificationsAsRead,
+        clearNotificationHistory,
         liveBetIn,
         liveBetOut,
         todayProfitLoss,

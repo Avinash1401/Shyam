@@ -118,31 +118,238 @@ $db->commit();
 echo json_encode(['success' => true, 'message' => 'Bet ticket generated']);`,
     },
     {
-      id: 'login.php',
-      name: 'api/login.php',
-      type: 'REST API',
-      icon: ShieldCheck,
+      id: 'notifications.sql',
+      name: 'database/notifications.sql',
+      type: 'SQL Schema',
+      icon: Database,
+      content: `-- =========================================================
+-- Anti-Spam Notification System Schema
+-- Prevents duplicate alerts and tracks read status efficiently
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS \`notifications\` (
+  \`id\` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  \`user_id\` INT NOT NULL,
+  \`title\` VARCHAR(150) NOT NULL,
+  \`description\` TEXT NOT NULL,
+  \`type\` ENUM('success', 'error', 'info', 'warning') DEFAULT 'info',
+  \`fingerprint\` VARCHAR(64) NOT NULL, -- SHA256 / MD5 hash of title+description for deduplication
+  \`is_read\` TINYINT(1) NOT NULL DEFAULT 0,
+  \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX \`idx_user_read\` (\`user_id\`, \`is_read\`),
+  INDEX \`idx_fingerprint\` (\`user_id\`, \`fingerprint\`, \`created_at\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+    },
+    {
+      id: 'NotificationService.php',
+      name: 'services/NotificationService.php',
+      type: 'PHP Service',
+      icon: Server,
       content: `<?php
 /**
- * Shyam Game - Authentication Login API
+ * Shyam Game - Zero-Spam Notification Service
+ * Handles notification creation with deduplication, read tracking, and incremental AJAX fetch
  */
 require_once __DIR__ . '/../config/database.php';
 
-header('Content-Type: application/json');
+class NotificationService {
+    private PDO $db;
 
-$input = json_decode(file_get_contents('php://input'), true);
-$username = sanitizeInput($input['username'] ?? '');
-$password = $input['password'] ?? '';
+    public function __construct() {
+        $this->db = Database::getConnection();
+    }
 
-$db = Database::getConnection();
-$stmt = $db->prepare("SELECT * FROM users WHERE username = :username LIMIT 1");
-$stmt->execute(['username' => $username]);
-$user = $stmt->fetch();
+    /**
+     * Dispatch notification with strict deduplication check
+     */
+    public function dispatchNotification(int $userId, string $title, string $description, string $type = 'info'): bool {
+        $fingerprint = md5(strtolower(trim($title)) . '|' . strtolower(trim($description)));
 
-if ($user && password_verify($password, $user['password'])) {
-    sendJSONResponse(true, 'Login successful', $user);
-} else {
-    sendJSONResponse(false, 'Invalid credentials');
+        // Check if duplicate notification exists created within the last 10 seconds
+        $checkStmt = $this->db->prepare("
+            SELECT id FROM notifications 
+            WHERE user_id = :user_id 
+              AND fingerprint = :fingerprint 
+              AND created_at >= NOW() - INTERVAL 10 SECOND
+            LIMIT 1
+        ");
+        $checkStmt->execute(['user_id' => $userId, 'fingerprint' => $fingerprint]);
+
+        if ($checkStmt->fetch()) {
+            return false; // Duplicate suppressed
+        }
+
+        $stmt = $this->db->prepare("
+            INSERT INTO notifications (user_id, title, description, type, fingerprint, is_read) 
+            VALUES (:user_id, :title, :description, :type, :fingerprint, 0)
+        ");
+        return $stmt->execute([
+            'user_id' => $userId,
+            'title' => $title,
+            'description' => $description,
+            'type' => $type,
+            'fingerprint' => $fingerprint
+        ]);
+    }
+
+    /**
+     * Fetch unread new notifications using Incremental ID filter (prevents polling old records)
+     */
+    public function getNewNotifications(int $userId, int $lastSeenId = 0): array {
+        $stmt = $this->db->prepare("
+            SELECT id, title, description, type, is_read, DATE_FORMAT(created_at, '%H:%i') as timestamp 
+            FROM notifications 
+            WHERE user_id = :user_id 
+              AND id > :last_id 
+              AND is_read = 0 
+            ORDER BY id ASC 
+            LIMIT 10
+        ");
+        $stmt->execute(['user_id' => $userId, 'last_id' => $lastSeenId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Mark single notification as read (never shown again)
+     */
+    public function markAsRead(int $userId, int $notifId): bool {
+        $stmt = $this->db->prepare("
+            UPDATE notifications 
+            SET is_read = 1 
+            WHERE id = :id AND user_id = :user_id
+        ");
+        return $stmt->execute(['id' => $notifId, 'user_id' => $userId]);
+    }
+
+    /**
+     * Mark ALL notifications as read
+     */
+    public function markAllAsRead(int $userId): bool {
+        $stmt = $this->db->prepare("
+            UPDATE notifications 
+            SET is_read = 1 
+            WHERE user_id = :user_id AND is_read = 0
+        ");
+        return $stmt->execute(['user_id' => $userId]);
+    }
+}`,
+    },
+    {
+      id: 'notifications.js',
+      name: 'assets/js/notifications.js',
+      type: 'JS / AJAX',
+      icon: Terminal,
+      content: `/**
+ * Shyam Game - Zero-Spam Anti-Duplicate Notification Manager
+ * JavaScript AJAX / WebSocket Client Engine
+ */
+class NotificationEngine {
+    constructor(userId) {
+        this.userId = userId;
+        this.lastSeenId = parseInt(localStorage.getItem('shyam_last_notif_id') || '0', 10);
+        this.activeToasts = new Map();
+        this.maxActiveToasts = 3; // Maximum 3 active notifications on screen
+        this.autoDismissMs = 5000; // 5 seconds auto-remove
+        this.shownFingerprints = new Set();
+        this.init();
+    }
+
+    init() {
+        this.bindEvents();
+        // Optimized polling (5s interval, uses ID cursor to prevent duplicate/old data traffic)
+        this.startPoll();
+    }
+
+    bindEvents() {
+        document.getElementById('mark-all-read-btn')?.addEventListener('click', () => {
+            this.markAllAsRead();
+        });
+    }
+
+    async pollNewNotifications() {
+        try {
+            const response = await fetch(\`/api/get_notifications.php?user_id=\${this.userId}&last_id=\${this.lastSeenId}\`);
+            const data = await response.json();
+
+            if (data.success && data.notifications.length > 0) {
+                data.notifications.forEach(notif => {
+                    if (notif.id > this.lastSeenId) {
+                        this.lastSeenId = notif.id;
+                        localStorage.setItem('shyam_last_notif_id', this.lastSeenId.toString());
+                    }
+                    this.renderToast(notif);
+                });
+            }
+        } catch (err) {
+            console.warn('Notification sync paused:', err);
+        }
+    }
+
+    renderToast(notif) {
+        const fingerprint = \`\${notif.title.toLowerCase()}|\${notif.description.toLowerCase()}\`;
+
+        // Anti-Duplicate Safeguard
+        if (this.shownFingerprints.has(fingerprint) || this.activeToasts.has(notif.id)) {
+            return;
+        }
+
+        this.shownFingerprints.add(fingerprint);
+
+        // Cap active toasts to maximum 3
+        if (this.activeToasts.size >= this.maxActiveToasts) {
+            const oldestKey = this.activeToasts.keys().next().value;
+            this.removeToast(oldestKey);
+        }
+
+        // Create Toast Card Element
+        const toastEl = document.createElement('div');
+        toastEl.className = \`toast-card \${notif.type} animate-slide-in\`;
+        toastEl.innerHTML = \`
+            <div class="toast-body">
+                <strong>\${notif.title}</strong>
+                <p>\${notif.description}</p>
+            </div>
+            <button onclick="notifEngine.markAsRead(\${notif.id})">&times;</button>
+            <div class="timer-bar" style="animationDuration: 5s;"></div>
+        \`;
+
+        document.getElementById('toast-container').appendChild(toastEl);
+        this.activeToasts.set(notif.id, toastEl);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            this.removeToast(notif.id);
+        }, this.autoDismissMs);
+    }
+
+    removeToast(id) {
+        const el = this.activeToasts.get(id);
+        if (el) {
+            el.remove();
+            this.activeToasts.delete(id);
+        }
+    }
+
+    async markAsRead(id) {
+        this.removeToast(id);
+        await fetch('/api/mark_read.php', {
+            method: 'POST',
+            body: JSON.stringify({ user_id: this.userId, notif_id: id })
+        });
+    }
+
+    async markAllAsRead() {
+        this.activeToasts.forEach((_, id) => this.removeToast(id));
+        await fetch('/api/mark_all_read.php', {
+            method: 'POST',
+            body: JSON.stringify({ user_id: this.userId })
+        });
+        document.querySelectorAll('.unread-badge').forEach(el => el.remove());
+    }
+
+    startPoll() {
+        setInterval(() => this.pollNewNotifications(), 5000);
+    }
 }`,
     },
   ];
