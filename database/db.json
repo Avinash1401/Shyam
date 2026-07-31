@@ -1,0 +1,236 @@
+{
+  "users": [
+    {
+      "id": "usr-admin",
+      "name": "Master Admin",
+      "username": "admin",
+      "password": "Admin@123",
+      "role": "SuperAdmin",
+      "points": 1000000,
+      "creditLimit": 5000000,
+      "status": "active",
+      "commissionRate": 0,
+      "phone": "+91 99999 88888",
+      "email": "admin@shyampanel.com",
+      "createdAt": "2025-01-01 00:00:00",
+      "lastLogin": "2026-07-31 00:00:00",
+      "referralCode": "REF-ADMIN"
+    }
+  ],
+  "gameTickets": [],
+  "depositRequests": [],
+  "withdrawalRequests": [],
+  "liveResults": [],
+  "winPercentages": [
+    {
+      "gameType": "2D Lottery",
+      "rtpPercentage": 82.5,
+      "targetHouseMargin": 17.5,
+      "mode": "Auto",
+      "maxSingleBetLimit": 10000,
+      "maxDrawLiability": 150000,
+      "updatedAt": "2026-07-31 10:00:00"
+    },
+    {
+      "gameType": "3D Lottery",
+      "rtpPercentage": 80.0,
+      "targetHouseMargin": 20.0,
+      "mode": "Auto",
+      "maxSingleBetLimit": 5000,
+      "maxDrawLiability": 200000,
+      "updatedAt": "2026-07-31 10:00:00"
+    },
+    {
+      "gameType": "Lucky 12",
+      "rtpPercentage": 85.0,
+      "targetHouseMargin": 15.0,
+      "mode": "High Margin",
+      "maxSingleBetLimit": 20000,
+      "maxDrawLiability": 300000,
+      "updatedAt": "2026-07-31 10:00:00"
+    },
+    {
+      "gameType": "12 Card",
+      "rtpPercentage": 84.0,
+      "targetHouseMargin": 16.0,
+      "mode": "Auto",
+      "maxSingleBetLimit": 15000,
+      "maxDrawLiability": 250000,
+      "updatedAt": "2026-07-31 10:00:00"
+    }
+  ],
+  "gameControls": [
+    {
+      "gameType": "2D Lottery",
+      "status": "Active",
+      "bettingLocked": false,
+      "roundDurationSeconds": 300,
+      "minBet": 10,
+      "maxBet": 10000,
+      "payoutPercentage": 90,
+      "mode": "Auto",
+      "currentRoundNo": "RD-20260731-001",
+      "secondsRemaining": 240
+    },
+    {
+      "gameType": "3D Lottery",
+      "status": "Active",
+      "bettingLocked": false,
+      "roundDurationSeconds": 600,
+      "minBet": 20,
+      "maxBet": 20000,
+      "payoutPercentage": 85,
+      "mode": "Auto",
+      "currentRoundNo": "RD-3D-101",
+      "secondsRemaining": 420
+    },
+    {
+      "gameType": "Lucky 12",
+      "status": "Active",
+      "bettingLocked": false,
+      "roundDurationSeconds": 180,
+      "minBet": 10,
+      "maxBet": 5000,
+      "payoutPercentage": 92,
+      "mode": "Auto",
+      "currentRoundNo": "L12-901",
+      "secondsRemaining": 110
+    },
+    {
+      "gameType": "12 Card",
+      "status": "Active",
+      "bettingLocked": false,
+      "roundDurationSeconds": 120,
+      "minBet": 5,
+      "maxBet": 2000,
+      "payoutPercentage": 90,
+      "mode": "Auto",
+      "currentRoundNo": "12C-501",
+      "secondsRemaining": 85
+    }
+  ],
+  "lucky12Cards": [
+    {
+      "id": "l12-1",
+      "cardNo": 1,
+      "name": "Golden Crown",
+      "icon": "👑",
+      "imageUrl": "https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card1_crown.png",
+      "multiplier": "10x",
+      "status": "active"
+    },
+    {
+      "id": "l12-2",
+      "cardNo": 2,
+      "name": "Lucky Seven",
+      "icon": "7️⃣",
+      "imageUrl": "https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card2_seven.png",
+      "multiplier": "10x",
+      "status": "active"
+    },
+    {
+      "id": "l12-3",
+      "cardNo": 3,
+      "name": "Royal Diamond",
+      "icon": "💎",
+      "imageUrl": "https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card3_diamond.png",
+      "multiplier": "10x",
+      "status": "active"
+    },
+    {
+      "id": "l12-4",
+      "cardNo": 4,
+      "name": "Mystic Star",
+      "icon": "⭐",
+      "imageUrl": "https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card4_star.png",
+      "multiplier": "10x",
+      "status": "active"
+    },
+    {
+      "id": "l12-5",
+      "cardNo": 5,
+      "name": "Golden Horseshoe",
+      "icon": "🧲",
+      "imageUrl": "https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card5_horseshoe.png",
+      "multiplier": "10x",
+      "status": "active"
+    },
+    {
+      "id": "l12-6",
+      "cardNo": 6,
+      "name": "Dragon Fortune",
+      "icon": "🐉",
+      "imageUrl": "https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card6_dragon.png",
+      "multiplier": "10x",
+      "status": "active"
+    },
+    {
+      "id": "l12-7",
+      "cardNo": 7,
+      "name": "Golden Lotus",
+      "icon": "🪷",
+      "imageUrl": "https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card7_lotus.png",
+      "multiplier": "10x",
+      "status": "active"
+    },
+    {
+      "id": "l12-8",
+      "cardNo": 8,
+      "name": "Royal Eagle",
+      "icon": "🦅",
+      "imageUrl": "https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card8_eagle.png",
+      "multiplier": "10x",
+      "status": "active"
+    },
+    {
+      "id": "l12-9",
+      "cardNo": 9,
+      "name": "Fire Phoenix",
+      "icon": "🔥",
+      "imageUrl": "https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card9_phoenix.png",
+      "multiplier": "10x",
+      "status": "active"
+    },
+    {
+      "id": "l12-10",
+      "cardNo": 10,
+      "name": "Jade Lion",
+      "icon": "🦁",
+      "imageUrl": "https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card10_lion.png",
+      "multiplier": "10x",
+      "status": "active"
+    },
+    {
+      "id": "l12-11",
+      "cardNo": 11,
+      "name": "Ace of Spades",
+      "icon": "♠️",
+      "imageUrl": "https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card11_spade.png",
+      "multiplier": "10x",
+      "status": "active"
+    },
+    {
+      "id": "l12-12",
+      "cardNo": 12,
+      "name": "Sun God",
+      "icon": "☀️",
+      "imageUrl": "https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card12_sungod.png",
+      "multiplier": "10x",
+      "status": "active"
+    }
+  ],
+  "onlinePlayers": [],
+  "notifications": [],
+  "transactions": [],
+  "activityLogs": [
+    {
+      "id": "log-1",
+      "username": "admin",
+      "role": "SuperAdmin",
+      "action": "Shared MySQL Database & Server Backend Initialized.",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-07-31 10:00:00",
+      "level": "info"
+    }
+  ]
+}

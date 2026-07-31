@@ -530,34 +530,48 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     localStorage.setItem('shyam_online_players', JSON.stringify(onlinePlayers));
   }, [onlinePlayers]);
 
-  // Cross-tab real-time database synchronization
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (!e.key) return;
-      try {
-        if (e.key === 'shyam_users' && e.newValue) {
-          setUsers(JSON.parse(e.newValue));
-        } else if (e.key === 'shyam_game_tickets' && e.newValue) {
-          setGameTickets(JSON.parse(e.newValue));
-        } else if (e.key === 'shyam_deposit_requests' && e.newValue) {
-          setDepositRequests(JSON.parse(e.newValue));
-        } else if (e.key === 'shyam_withdrawal_requests' && e.newValue) {
-          setWithdrawalRequests(JSON.parse(e.newValue));
-        } else if (e.key === 'shyam_transactions' && e.newValue) {
-          setTransactions(JSON.parse(e.newValue));
-        } else if (e.key === 'shyam_online_players' && e.newValue) {
-          setOnlinePlayers(JSON.parse(e.newValue));
-        } else if (e.key === 'shyam_live_results' && e.newValue) {
-          setLiveResults(JSON.parse(e.newValue));
-        }
-      } catch (err) {
-        console.error('Storage sync error:', err);
-      }
-    };
+  // ---------------------------------------------------------------------------
+  // REAL-TIME UNIFIED BACKEND DATABASE SYNCHRONIZATION
+  // ---------------------------------------------------------------------------
+  const fetchBackendSync = async () => {
+    try {
+      const res = await fetch('/api/sync');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          const data = json.data;
+          if (Array.isArray(data.users)) setUsers(data.users);
+          if (Array.isArray(data.gameTickets)) setGameTickets(data.gameTickets);
+          if (Array.isArray(data.depositRequests)) setDepositRequests(data.depositRequests);
+          if (Array.isArray(data.withdrawalRequests)) setWithdrawalRequests(data.withdrawalRequests);
+          if (Array.isArray(data.liveResults)) setLiveResults(data.liveResults);
+          if (Array.isArray(data.winPercentages)) setWinPercentages(data.winPercentages);
+          if (Array.isArray(data.gameControls)) setGameControls(data.gameControls);
+          if (Array.isArray(data.lucky12Cards)) setLucky12Cards(data.lucky12Cards);
+          if (Array.isArray(data.onlinePlayers)) setOnlinePlayers(data.onlinePlayers);
+          if (Array.isArray(data.notifications)) setNotifications(data.notifications);
+          if (Array.isArray(data.transactions)) setTransactions(data.transactions);
+          if (Array.isArray(data.activityLogs)) setActivityLogs(data.activityLogs);
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+          // Update current logged-in player's balance dynamically from shared DB
+          if (currentUser) {
+            const freshUser = data.users.find((u: UserAccount) => u.username === currentUser.username);
+            if (freshUser) {
+              setCurrentUser((prev) => (prev ? { ...prev, points: freshUser.points, status: freshUser.status } : null));
+            }
+          }
+        }
+      }
+    } catch (err) {
+      // Background poll silently resumes on server re-connection
+    }
+  };
+
+  useEffect(() => {
+    fetchBackendSync();
+    const interval = setInterval(fetchBackendSync, 1500);
+    return () => clearInterval(interval);
+  }, [currentUser?.username]);
 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [silenceBettingNotifications, setSilenceBettingNotifications] = useState<boolean>(true);
@@ -1010,107 +1024,36 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     toggleInList(users, setUsers);
   };
 
-  const declareWinningResult = (
+  const declareWinningResult = async (
     gameType: '2D Lottery' | '3D Lottery' | 'Lucky 12' | '12 Card',
     drawNum: string,
     result: string,
     adminId: string = 'superadmin'
   ) => {
-    const newDraw: LiveResultDraw = {
-      id: `lr-${Date.now()}`,
-      gameType,
-      drawNumber: drawNum || `DRW-${gameType.substring(0, 2).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
-      winningResult: result,
-      drawTime: new Date().toISOString().replace('T', ' ').substring(0, 16),
-      totalBets: Math.floor(20000 + Math.random() * 50000),
-      totalPayout: Math.floor(15000 + Math.random() * 35000),
-      status: 'Declared',
-    };
-
-    setLiveResults((prev) => [newDraw, ...prev]);
-
-    // Resolve Pending Tickets for this game type
-    const multiplier = gameType === '2D Lottery' ? 90 : gameType === '3D Lottery' ? 900 : 10;
-
-    setGameTickets((prev) =>
-      prev.map((ticket) => {
-        if (ticket.gameType === gameType && ticket.status === 'Pending') {
-          const isWinner = ticket.selectedNumbers.some(
-            (num) => num.trim().toLowerCase() === result.trim().toLowerCase() || result.includes(num.trim())
-          );
-
-          if (isWinner) {
-            const winVal = ticket.betAmount * multiplier;
-            // Credit winner user wallet and create win payout transaction
-            setUsers((prevUsers) =>
-              prevUsers.map((u) => {
-                if (u.username === ticket.username) {
-                  const updatedPoints = u.points + winVal;
-
-                  const winTxn: TransactionRecord = {
-                    id: `TXN-WIN-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
-                    refId: `REF-WIN-${Math.floor(100000 + Math.random() * 900000)}`,
-                    fromUser: 'System Payout Engine',
-                    toUser: ticket.username,
-                    type: 'Credit',
-                    amount: winVal,
-                    balanceAfter: updatedPoints,
-                    remark: `Win Payout on ${gameType} (Ticket #${ticket.ticketNo}, Result: ${result})`,
-                    timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-                  };
-                  setTransactions((prevTx) => [winTxn, ...prevTx]);
-
-                  if (playerSession.user && playerSession.user.username === ticket.username) {
-                    setPlayerSession({ isLoggedIn: true, user: { ...playerSession.user, points: updatedPoints } });
-                  }
-                  if (currentUser && currentUser.username === ticket.username) {
-                    setCurrentUser({ ...currentUser, points: updatedPoints });
-                  }
-
-                  return { ...u, points: updatedPoints };
-                }
-                return u;
-              })
-            );
-            return { ...ticket, status: 'Won', winAmount: winVal };
-          } else {
-            return { ...ticket, status: 'Lost', winAmount: 0 };
-          }
-        }
-        return ticket;
-      })
-    );
-
-    // Audit Logging
-    const newLog: ActivityLog = {
-      id: `log-${Date.now()}`,
-      username: adminId,
-      role: 'SuperAdmin',
-      action: `Declared Winning Result [${result}] for ${gameType} (${newDraw.drawNumber}) | Admin ID: ${adminId}`,
-      ip: '103.110.244.18',
-      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      level: 'warning',
-    };
-    setActivityLogs((prev) => [newLog, ...prev]);
-
-    // Reset game control timer if in manual mode
-    setGameControls((prev) =>
-      prev.map((gc) =>
-        gc.gameType === gameType
-          ? {
-              ...gc,
-              secondsRemaining: gc.roundDurationSeconds,
-              bettingLocked: false,
-              currentRoundNo: `DRW-${gameType.substring(0, 2).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
-            }
-          : gc
-      )
-    );
-
-    addToast(
-      'Result Declared & Payouts Distributed!',
-      `Official Result "${result}" declared for ${gameType} (${newDraw.drawNumber}) by ${adminId}.`
-    );
+    try {
+      const res = await fetch('/api/results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gameType,
+          winningResult: result,
+          drawNumber: drawNum,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchBackendSync();
+        addToast(
+          'Result Declared & Payouts Distributed!',
+          `Official Result "${result}" declared for ${gameType} by ${adminId}.`,
+          'success'
+        );
+      } else {
+        addToast('Error', data.message || 'Could not declare result.', 'error');
+      }
+    } catch (err) {
+      addToast('Error', 'Server error while declaring result.', 'error');
+    }
   };
 
   const cancelTicket = (ticketId: string, reason: string): boolean => {
@@ -1137,27 +1080,27 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return true;
   };
 
-  const updateWinPercentage = (
+  const updateWinPercentage = async (
     gameType: string,
     rtp: number,
     margin: number,
     mode: 'Auto' | 'Manual' | 'High Margin'
   ) => {
-    setWinPercentages((prev) =>
-      prev.map((item) =>
-        item.gameType === gameType
-          ? {
-              ...item,
-              rtpPercentage: rtp,
-              targetHouseMargin: margin,
-              mode,
-              updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-            }
-          : item
-      )
-    );
-
-    addToast('Settings Saved', `Win Percentage rules updated for ${gameType}`);
+    try {
+      const res = await fetch('/api/win-percentage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gameType,
+          updates: { rtpPercentage: rtp, targetHouseMargin: margin, mode },
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchBackendSync();
+        addToast('Settings Saved', `Win Percentage rules updated for ${gameType}`);
+      }
+    } catch (err) {}
   };
 
   const kickOnlinePlayer = (id: string) => {
@@ -1168,50 +1111,40 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  const toggleGameStatus = (gameType: string) => {
-    setGameControls((prev) =>
-      prev.map((gc) => {
-        if (gc.gameType === gameType) {
-          const nextStatus = gc.status === 'Active' ? 'Stopped' : 'Active';
-          addToast('Game Status Changed', `${gameType} is now ${nextStatus}`, nextStatus === 'Active' ? 'success' : 'warning');
-          return { ...gc, status: nextStatus };
-        }
-        return gc;
-      })
-    );
+  const toggleGameStatus = async (gameType: string) => {
+    const gc = gameControls.find((g) => g.gameType === gameType);
+    if (!gc) return;
+    const nextStatus = gc.status === 'Active' ? 'Stopped' : 'Active';
+    await updateGameControl(gameType, { status: nextStatus });
   };
 
-  const toggleBettingLock = (gameType: string) => {
-    setGameControls((prev) =>
-      prev.map((gc) => {
-        if (gc.gameType === gameType) {
-          const nextLocked = !gc.bettingLocked;
-          addToast('Betting Lock Updated', `Betting on ${gameType} is now ${nextLocked ? 'LOCKED 🔒' : 'UNLOCKED 🔓'}`, nextLocked ? 'warning' : 'success');
-          return { ...gc, bettingLocked: nextLocked };
-        }
-        return gc;
-      })
-    );
+  const toggleBettingLock = async (gameType: string) => {
+    const gc = gameControls.find((g) => g.gameType === gameType);
+    if (!gc) return;
+    const nextLocked = !gc.bettingLocked;
+    await updateGameControl(gameType, { bettingLocked: nextLocked });
   };
 
-  const toggleResultMode = (gameType: string) => {
-    setGameControls((prev) =>
-      prev.map((gc) => {
-        if (gc.gameType === gameType) {
-          const nextMode = gc.mode === 'Auto' ? 'Manual' : 'Auto';
-          addToast('Result Control Mode Changed', `${gameType} switched to ${nextMode} Result Mode`, 'info');
-          return { ...gc, mode: nextMode };
-        }
-        return gc;
-      })
-    );
+  const toggleResultMode = async (gameType: string) => {
+    const gc = gameControls.find((g) => g.gameType === gameType);
+    if (!gc) return;
+    const nextMode = gc.mode === 'Auto' ? 'Manual' : 'Auto';
+    await updateGameControl(gameType, { mode: nextMode });
   };
 
-  const updateGameControl = (gameType: string, updates: Partial<GameControlConfig>) => {
-    setGameControls((prev) =>
-      prev.map((gc) => (gc.gameType === gameType ? { ...gc, ...updates } : gc))
-    );
-    addToast('Admin Control Saved', `Updated parameters for ${gameType}`);
+  const updateGameControl = async (gameType: string, updates: Partial<GameControlConfig>) => {
+    try {
+      const res = await fetch('/api/game-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameType, updates }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchBackendSync();
+        addToast('Admin Control Saved', `Updated parameters for ${gameType}`);
+      }
+    } catch (err) {}
   };
 
   const placeBet = (
@@ -1306,55 +1239,47 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const ticketNo = `SHM-${Date.now().toString().slice(-6)}`;
     const txnId = `TXN-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    // Create ticket with all metadata
-    const newTicket: GameTicket = {
-      id: `tkt-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
-      ticketNo,
-      userId: user.id || user.username,
-      username: user.username,
-      playerName: user.name || user.username,
-      mobileNumber: user.phone || 'N/A',
-      role: user.role,
-      parentName: user.parentName || 'Direct Player',
-      gameType,
-      selectedNumbers,
-      betAmount: amount,
-      winAmount: 0,
-      status: 'Pending',
-      roundId,
-      drawTime: gc ? `${gc.secondsRemaining}s` : 'In 2 mins',
-      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      currentWalletBalance: balanceAfter,
-      transactionId: txnId,
-    };
+    const placeBet = async (
+    gameType: '2D Lottery' | '3D Lottery' | 'Lucky 12' | '12 Card',
+    selectedNumbers: string[],
+    amount: number
+  ): Promise<boolean> => {
+    const user = currentUser || playerSession.user;
+    if (!user) {
+      addToast('Action Required', 'Please log in to place a bet.', 'error');
+      return false;
+    }
 
-    setGameTickets((prev) => [newTicket, ...prev]);
+    try {
+      const res = await fetch('/api/place-bet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: user.username,
+          gameType,
+          selectedNumbers,
+          betAmount: amount,
+        }),
+      });
+      const data = await res.json();
 
-    // Create Transaction
-    const newTxn: TransactionRecord = {
-      id: txnId,
-      refId: `REF-${Math.floor(100000 + Math.random() * 900000)}`,
-      fromUser: user.username,
-      toUser: 'System Wallet',
-      type: 'Debit',
-      amount,
-      balanceAfter,
-      remark: `Bet placed on ${gameType} (Round: ${roundId}, Ticket: #${ticketNo})`,
-      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-    };
-    setTransactions((prev) => [newTxn, ...prev]);
-
-    // Update player online status
-    setOnlinePlayers((prev) =>
-      prev.map((p) =>
-        p.username === user.username
-          ? { ...p, currentBet: p.currentBet + amount, status: 'In Game' }
-          : p
-      )
-    );
-
-    addToast('Ticket Confirmed!', `Ticket #${ticketNo} placed for ₹${amount.toLocaleString()}`);
-    return true;
+      if (data.success && data.ticket) {
+        if (data.updatedBalance !== undefined) {
+          const updated = { ...user, points: data.updatedBalance };
+          setCurrentUser(updated);
+          setPlayerSession({ isLoggedIn: true, user: updated });
+        }
+        await fetchBackendSync();
+        addToast('Ticket Confirmed!', `Ticket #${data.ticket.ticketNo} placed for ₹${amount.toLocaleString()}`);
+        return true;
+      } else {
+        addToast('Bet Failed', data.message || 'Failed to place bet.', 'error');
+        return false;
+      }
+    } catch (err) {
+      addToast('Error', 'Server connection error.', 'error');
+      return false;
+    }
   };
 
   // Authentication & Session Methods
@@ -1385,93 +1310,38 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return true;
     }
 
-    const allAccounts = [...users, ...retailers, ...distributers, ...superDistributers];
-    const found = allAccounts.find(
-      (u) => u.username.toLowerCase() === normUser || (u.email && u.email.toLowerCase() === normUser)
-    );
-
-    if (found) {
-      if (found.status === 'blocked' || found.status === 'suspended') {
-        addToast('Account Blocked', 'Your account has been suspended by Admin.', 'error');
-        return false;
-      }
-
-      const updatedAcc = {
-        ...found,
-        lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
-        referralCode: found.referralCode || `REF-${found.username.toUpperCase()}`,
-      };
-
-      setIsLoggedIn(true);
-      setCurrentUser(updatedAcc);
-      const role: 'Admin' | 'Player' = found.role === 'User' ? 'Player' : 'Admin';
-      setActiveRole(role);
-      setCurrentPage(role === 'Player' ? 'user_game_portal' : 'dashboard');
-      addToast('Login Successful', `Welcome back, ${updatedAcc.name}!`, 'success');
-      return true;
-    }
-
-    addToast('Login Failed', 'Invalid username or credentials.', 'error');
-    return false;
+    loginAsPlayer(usernameInput, passwordInput);
+    return true;
   };
 
-  const loginAsPlayer = (usernameInput: string, passwordInput?: string): { success: boolean; message?: string } => {
-    const normUser = usernameInput.trim().toLowerCase();
-    const cleanPhone = normUser.replace(/[\s\+]+/g, '');
-
-    const allAccounts = [...users, ...retailers, ...distributers, ...superDistributers];
-    const found = allAccounts.find(
-      (u) =>
-        u.username.toLowerCase() === normUser ||
-        (u.email && u.email.toLowerCase() === normUser) ||
-        (u.phone && u.phone.replace(/[\s\+]+/g, '').includes(cleanPhone) && cleanPhone.length >= 4)
-    );
-
-    if (found) {
-      if (found.status === 'blocked' || found.status === 'suspended') {
-        addToast('Account Blocked', 'Your player account has been suspended.', 'error');
-        return { success: false, message: 'Your player account has been suspended.' };
-      }
-
-      const updatedAcc = {
-        ...found,
-        lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
-        referralCode: found.referralCode || `REF-${found.username.toUpperCase()}`,
-      };
-
-      const sess = { isLoggedIn: true, user: updatedAcc };
-      setPlayerSession(sess);
-      setIsLoggedIn(true);
-      setCurrentUser(updatedAcc);
-      setActiveRole('Player');
-      setCurrentPage('user_game_portal');
-
-      // Update online players monitor
-      setOnlinePlayers((prev) => {
-        const filtered = prev.filter((p) => p.username !== updatedAcc.username);
-        return [
-          {
-            id: `onl-${Date.now()}`,
-            username: updatedAcc.username,
-            role: 'User',
-            parent: updatedAcc.parentName || 'Direct Player',
-            ipAddress: '103.110.244.18',
-            device: 'Web Client',
-            connectedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            currentGame: '2D Lottery',
-            currentBet: 0,
-            status: 'In Lobby',
-          },
-          ...filtered,
-        ];
+  const loginAsPlayer = async (usernameInput: string, passwordInput?: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: usernameInput, password: passwordInput }),
       });
+      const data = await res.json();
 
-      addToast('Player Logged In', `Welcome to Shyam Gaming Portal, ${updatedAcc.name}!`, 'success');
-      return { success: true };
+      if (data.success && data.user) {
+        const user = data.user;
+        const sess = { isLoggedIn: true, user };
+        setPlayerSession(sess);
+        setIsLoggedIn(true);
+        setCurrentUser(user);
+        setActiveRole('Player');
+        setCurrentPage('user_game_portal');
+        await fetchBackendSync();
+        addToast('Player Logged In', `Welcome to Shyam Gaming Portal, ${user.name}!`, 'success');
+        return { success: true };
+      } else {
+        addToast('Login Failed', data.message || 'Account not found. Please register.', 'error');
+        return { success: false, message: data.message || 'Account not found.' };
+      }
+    } catch (err: any) {
+      addToast('Connection Error', 'Could not reach backend server.', 'error');
+      return { success: false, message: 'Server network error.' };
     }
-
-    addToast('Login Failed', 'Account not found. Please register a new account.', 'error');
-    return { success: false, message: 'Invalid username/mobile or account does not exist. Please register.' };
   };
 
   const loginAsAdmin = (usernameInput: string, passwordInput?: string, pinInput?: string): { success: boolean; message?: string } => {
@@ -1559,115 +1429,39 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return { success: false, message: 'Access Denied: Account is not authorized for Admin access.' };
   };
 
-  const register = (
+  const register = async (
     name: string,
     username: string,
     password: string,
     email: string,
     phone: string,
     refCode?: string
-  ): { success: boolean; message: string } => {
-    const normUser = username.trim().toLowerCase();
-    const allAccounts = [...users, ...retailers, ...distributers, ...superDistributers];
+  ): Promise<{ success: boolean; message: string }> => {
+    try {
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, username, password, email, phone, referralCode: refCode, role: 'User', initialPoints: 500 }),
+      });
+      const data = await res.json();
 
-    if (allAccounts.some((u) => u.username.toLowerCase() === normUser)) {
-      return { success: false, message: 'Username already exists. Please choose another.' };
+      if (data.success && data.user) {
+        const user = data.user;
+        const sess = { isLoggedIn: true, user };
+        setPlayerSession(sess);
+        setIsLoggedIn(true);
+        setCurrentUser(user);
+        setActiveRole('Player');
+        setCurrentPage('user_game_portal');
+        await fetchBackendSync();
+        addToast('Account Registered!', `Welcome to Shyam Panel, ${name}! You received ₹500 signup bonus.`, 'success');
+        return { success: true, message: 'Registration successful!' };
+      } else {
+        return { success: false, message: data.message || 'Registration failed.' };
+      }
+    } catch (err: any) {
+      return { success: false, message: 'Server network error.' };
     }
-
-    const generatedRefCode = `REF-${username.toUpperCase()}`;
-    let referrerUser: UserAccount | undefined;
-
-    if (refCode && refCode.trim()) {
-      const cleanRefCode = refCode.trim().toUpperCase();
-      referrerUser = allAccounts.find(
-        (u) => u.referralCode === cleanRefCode || `REF-${u.username.toUpperCase()}` === cleanRefCode
-      );
-    }
-
-    const initialPoints = 500;
-    const newUser: UserAccount = {
-      id: `usr-${Date.now()}`,
-      name,
-      username,
-      role: 'User',
-      points: initialPoints,
-      creditLimit: 0,
-      status: 'active',
-      commissionRate: 0,
-      phone,
-      email,
-      password: `$2a$10$hashed_${Math.random().toString(36).substring(2, 10)}`,
-      createdAt: new Date().toISOString().split('T')[0],
-      lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
-      referralCode: generatedRefCode,
-      referredBy: referrerUser ? referrerUser.username : undefined,
-      referralEarnings: 0,
-    };
-
-    setUsers((prev) => [newUser, ...prev]);
-
-    if (referrerUser) {
-      const bonus = 200;
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.username === referrerUser!.username
-            ? {
-                ...u,
-                points: u.points + bonus,
-                referralEarnings: (u.referralEarnings || 0) + bonus,
-              }
-            : u
-        )
-      );
-
-      const refRec: ReferralRecord = {
-        id: `ref-${Date.now()}`,
-        referrerUsername: referrerUser.username,
-        referredUsername: username,
-        referralCode: referrerUser.referralCode || `REF-${referrerUser.username.toUpperCase()}`,
-        bonusPoints: bonus,
-        date: new Date().toISOString().split('T')[0],
-      };
-      setReferralRecords((prev) => [refRec, ...prev]);
-
-      const refTxn: TransactionRecord = {
-        id: `txn-${Date.now()}`,
-        refId: `REF-BONUS-${Math.floor(100000 + Math.random() * 900000)}`,
-        fromUser: 'System Referral Bonus',
-        toUser: referrerUser.username,
-        type: 'Credit',
-        amount: bonus,
-        balanceAfter: referrerUser.points + bonus,
-        remark: `Referral Signup Bonus for inviting ${username}`,
-        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      };
-      setTransactions((prev) => [refTxn, ...prev]);
-    }
-
-    setIsLoggedIn(true);
-    setCurrentUser(newUser);
-    setActiveRole('Player');
-    setCurrentPage('user_game_portal');
-
-    // Update online players monitor
-    setOnlinePlayers((prev) => [
-      {
-        id: `onl-${Date.now()}`,
-        username: newUser.username,
-        role: 'User',
-        parent: newUser.parentName || 'Direct Player',
-        ipAddress: '103.110.244.18',
-        device: 'Web Client',
-        connectedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        currentGame: '2D Lottery',
-        currentBet: 0,
-        status: 'In Lobby',
-      },
-      ...prev,
-    ]);
-
-    addToast('Account Registered!', `Welcome to Shyam Panel, ${name}! You received ₹500 signup bonus.`, 'success');
-    return { success: true, message: 'Registration successful!' };
   };
 
   const [activeOTP, setActiveOTP] = useState<{ emailOrPhone: string; code: string } | null>(null);
@@ -1741,102 +1535,133 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   // Deposit & Withdrawal Requests
-  const submitDepositRequest = (
+  const submitDepositRequest = async (
     amount: number,
     paymentMethod: 'UPI' | 'Bank Transfer' | 'Crypto' | 'USDT',
     utrNumber: string
-  ): boolean => {
+  ): Promise<boolean> => {
     if (!currentUser) {
       addToast('Error', 'Please log in to submit deposit request.', 'error');
       return false;
     }
 
-    const newDep: DepositRequest = {
-      id: `dep-${Date.now()}`,
-      username: currentUser.username,
-      userRole: currentUser.role,
-      amount,
-      paymentMethod,
-      utrNumber,
-      status: 'Pending',
-      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-      remark: `Submitted via ${paymentMethod} (UTR: ${utrNumber})`,
-    };
-
-    setDepositRequests((prev) => [newDep, ...prev]);
-    addToast('Deposit Request Submitted', `₹${amount.toLocaleString()} deposit request sent for Admin approval.`, 'info');
-    return true;
+    try {
+      const res = await fetch('/api/deposit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: currentUser.username,
+          amount,
+          paymentMethod,
+          utrNumber,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchBackendSync();
+        addToast('Deposit Request Submitted', `₹${amount.toLocaleString()} deposit request sent for Admin approval.`, 'info');
+        return true;
+      } else {
+        addToast('Error', data.message || 'Failed to submit deposit.', 'error');
+        return false;
+      }
+    } catch (err) {
+      addToast('Error', 'Server connection error.', 'error');
+      return false;
+    }
   };
 
-  const approveDepositRequest = (id: string) => {
-    const req = depositRequests.find((r) => r.id === id);
-    if (!req || req.status !== 'Pending') return;
-
-    setDepositRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: 'Approved' as const } : r))
-    );
-
-    adjustPoints(req.username, req.amount, 'Credit', `Deposit Approved (UTR: ${req.utrNumber})`);
-    addToast('Deposit Approved', `Credited ₹${req.amount.toLocaleString()} to ${req.username}.`, 'success');
+  const approveDepositRequest = async (id: string) => {
+    try {
+      const res = await fetch('/api/deposits/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'Approved' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchBackendSync();
+        addToast('Deposit Approved', 'Deposit approved and player wallet credited.', 'success');
+      } else {
+        addToast('Error', data.message || 'Failed to approve deposit.', 'error');
+      }
+    } catch (err) {}
   };
 
-  const rejectDepositRequest = (id: string, reason: string = 'Rejected by Admin') => {
-    setDepositRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: 'Rejected' as const, remark: reason } : r))
-    );
-    addToast('Deposit Rejected', `Deposit request ${id} rejected.`, 'warning');
+  const rejectDepositRequest = async (id: string, reason: string = 'Rejected by Admin') => {
+    try {
+      const res = await fetch('/api/deposits/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'Rejected', remark: reason }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchBackendSync();
+        addToast('Deposit Rejected', 'Deposit request rejected.', 'warning');
+      }
+    } catch (err) {}
   };
 
-  const submitWithdrawalRequest = (
+  const submitWithdrawalRequest = async (
     amount: number,
     paymentMethod: 'UPI' | 'Bank Transfer',
     accountDetails: string
-  ): boolean => {
+  ): Promise<boolean> => {
     if (!currentUser) return false;
-    if (currentUser.points < amount) {
-      addToast('Insufficient Points', 'Wallet balance is lower than withdrawal amount.', 'error');
+    try {
+      const res = await fetch('/api/withdraw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: currentUser.username,
+          amount,
+          paymentMethod,
+          accountDetails,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchBackendSync();
+        addToast('Withdrawal Requested', `₹${amount.toLocaleString()} withdrawal request placed.`, 'info');
+        return true;
+      } else {
+        addToast('Error', data.message || 'Insufficient points or failed.', 'error');
+        return false;
+      }
+    } catch (err) {
       return false;
     }
-
-    adjustPoints(currentUser.username, amount, 'Debit', `Withdrawal Request Placed (${paymentMethod})`);
-
-    const newWd: WithdrawalRequest = {
-      id: `wd-${Date.now()}`,
-      username: currentUser.username,
-      userRole: currentUser.role,
-      amount,
-      paymentMethod,
-      accountDetails,
-      status: 'Pending',
-      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-    };
-
-    setWithdrawalRequests((prev) => [newWd, ...prev]);
-    addToast('Withdrawal Requested', `₹${amount.toLocaleString()} withdrawal request placed.`, 'info');
-    return true;
   };
 
-  const approveWithdrawalRequest = (id: string) => {
-    const req = withdrawalRequests.find((r) => r.id === id);
-    if (!req || req.status !== 'Pending') return;
-
-    setWithdrawalRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: 'Approved' as const } : r))
-    );
-
-    addToast('Withdrawal Approved', `₹${req.amount.toLocaleString()} payout processed for ${req.username}.`, 'success');
+  const approveWithdrawalRequest = async (id: string) => {
+    try {
+      const res = await fetch('/api/withdrawals/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'Approved' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchBackendSync();
+        addToast('Withdrawal Approved', 'Payout processed successfully.', 'success');
+      }
+    } catch (err) {}
   };
 
-  const rejectWithdrawalRequest = (id: string, reason: string = 'Rejected by Admin') => {
-    const req = withdrawalRequests.find((r) => r.id === id);
-    if (!req || req.status !== 'Pending') return;
-
-    adjustPoints(req.username, req.amount, 'Credit', `Withdrawal Request Rejected - Refund`);
-
-    setWithdrawalRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: 'Rejected' as const, remark: reason } : r))
-    );
-    addToast('Withdrawal Rejected', `Withdrawal request rejected and points refunded to ${req.username}.`, 'warning');
+  const rejectWithdrawalRequest = async (id: string, reason: string = 'Rejected by Admin') => {
+    try {
+      const res = await fetch('/api/withdrawals/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'Rejected', remark: reason }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchBackendSync();
+        addToast('Withdrawal Rejected', 'Withdrawal request rejected and points refunded.', 'warning');
+      }
+    } catch (err) {}
   };
 
   const clearOldLogs = (type: 'logs' | 'tickets' | 'transactions') => {
