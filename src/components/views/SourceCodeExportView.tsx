@@ -195,101 +195,164 @@ CREATE TABLE IF NOT EXISTS \`lucky12_cards\` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
     },
     {
-      id: 'player_login.ts',
-      name: 'api/auth/player_login.ts',
-      type: 'REST API',
+      id: 'player_index.php',
+      name: 'player/index.php',
+      type: 'Player Login',
       icon: FileCode,
-      content: `import { VercelRequest, VercelResponse } from '@vercel/node';
-import jwt from 'jsonwebtoken';
-import { queryDatabase } from '../utils/db';
+      content: `<?php
+/**
+ * Shyam Game - Player Login & Session Portal
+ * Path: /player/index.php
+ * Deployment: InfinityFree Hosting
+ */
+session_start();
+require_once __DIR__ . '/../config/database.php';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+// If already logged in as Player, redirect directly to Player Dashboard
+if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'Player') {
+    header('Location: dashboard.php');
+    exit;
+}
 
-  const { username, password } = req.body;
+$error = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim($_POST['username'] ?? '');
+    $password = trim($_POST['password'] ?? '');
 
-  try {
-    const users = await queryDatabase(
-      'SELECT id, username, role, status, points FROM users WHERE username = ? AND role = "Player"',
-      [username]
-    );
+    if ($username && $password) {
+        $db = Database::getConnection();
+        $stmt = $db->prepare("SELECT id, username, password_hash, role, status FROM users WHERE username = :username AND role = 'Player' LIMIT 1");
+        $stmt->execute(['username' => $username]);
+        $player = $stmt->fetch();
 
-    if (users.length === 0) {
-      return res.status(401).json({ error: 'Invalid Player Credentials' });
+        if ($player && password_verify($password, $player['password_hash'])) {
+            if ($player['status'] !== 'active') {
+                $error = 'Your account has been suspended. Please contact support.';
+            } else {
+                session_regenerate_id(true);
+                $_SESSION['player_id'] = $player['id'];
+                $_SESSION['player_name'] = $player['username'];
+                $_SESSION['user_role'] = 'Player';
+                header('Location: dashboard.php');
+                exit;
+            }
+        } else {
+            $error = 'Invalid Player Username or Password.';
+        }
+    } else {
+        $error = 'Please fill in all fields.';
     }
-
-    const player = users[0];
-
-    // Issue Player JWT
-    const accessToken = jwt.sign(
-      { userId: player.id, username: player.username, role: 'Player' },
-      process.env.JWT_PLAYER_SECRET || 'player_secret',
-      { expiresIn: '15m' }
-    );
-
-    const refreshToken = jwt.sign(
-      { userId: player.id },
-      process.env.JWT_REFRESH_SECRET || 'refresh_secret',
-      { expiresIn: '7d' }
-    );
-
-    return res.status(200).json({
-      success: true,
-      accessToken,
-      refreshToken,
-      user: player
-    });
-  } catch (error) {
-    return res.status(500).json({ error: 'Database connection failed' });
-  }
-}`,
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shyam Game - Player Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .login-card { background: #1e293b; border: 1px solid #334155; border-radius: 20px; padding: 2.5rem; width: 100%; max-width: 420px; }
+        .btn-gold { background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 800; border: none; border-radius: 12px; padding: 12px; }
+        .form-control { background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 12px; padding: 12px; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="text-center mb-4">
+            <h2 class="fw-bold text-warning mb-1">🎮 SHYAM GAME</h2>
+            <p class="text-secondary small">Player Gaming Portal Access</p>
+        </div>
+        <?php if ($error): ?>
+            <div class="alert alert-danger py-2 rounded-3 text-center small mb-3"><?= htmlspecialchars($error) ?></div>
+        <?php endif; ?>
+        <form method="POST" action="index.php">
+            <div class="mb-3">
+                <label class="form-label text-secondary small fw-bold">Username / ID</label>
+                <input type="text" name="username" class="form-control" placeholder="Enter player username" required>
+            </div>
+            <div class="mb-4">
+                <label class="form-label text-secondary small fw-bold">Password</label>
+                <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-gold w-100 text-uppercase">Play Now</button>
+        </form>
+    </div>
+</body>
+</html>`,
     },
     {
-      id: 'admin_login.ts',
-      name: 'api/auth/admin_login.ts',
-      type: 'REST API',
+      id: 'admin_index.php',
+      name: 'admin/index.php',
+      type: 'Admin Login',
       icon: FileCode,
-      content: `import { VercelRequest, VercelResponse } from '@vercel/node';
-import jwt from 'jsonwebtoken';
-import { queryDatabase } from '../utils/db';
+      content: `<?php
+/**
+ * Shyam Game - Admin Secure Login Portal
+ * Path: /admin/index.php
+ * Deployment: InfinityFree Hosting
+ */
+session_start();
+require_once __DIR__ . '/../config/database.php';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+// If already logged in as Admin, redirect directly to Admin Dashboard
+if (isset($_SESSION['admin_role']) && in_array($_SESSION['admin_role'], ['SuperAdmin', 'SuperDistributer', 'Distributer'])) {
+    header('Location: dashboard.php');
+    exit;
+}
 
-  const { username, password, pin } = req.body;
+$error = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim($_POST['username'] ?? '');
+    $password = trim($_POST['password'] ?? '');
+    $pin = trim($_POST['pin'] ?? '');
 
-  try {
-    const admins = await queryDatabase(
-      'SELECT id, username, role, status FROM users WHERE username = ? AND role IN ("SuperAdmin", "SuperDistributer", "Distributer")',
-      [username]
-    );
+    if ($username && $password && $pin === '1234') {
+        $db = Database::getConnection();
+        $stmt = $db->prepare("SELECT id, username, password_hash, role, status FROM users WHERE username = :username AND role IN ('SuperAdmin', 'SuperDistributer', 'Distributer') LIMIT 1");
+        $stmt->execute(['username' => $username]);
+        $admin = $stmt->fetch();
 
-    if (admins.length === 0) {
-      return res.status(403).json({ error: 'Admin Access Denied' });
+        if ($admin && password_verify($password, $admin['password_hash'])) {
+            session_regenerate_id(true);
+            $_SESSION['admin_id'] = $admin['id'];
+            $_SESSION['admin_name'] = $admin['username'];
+            $_SESSION['admin_role'] = $admin['role'];
+            header('Location: dashboard.php');
+            exit;
+        } else {
+            $error = 'Invalid Admin credentials or unauthorized access.';
+        }
+    } else {
+        $error = 'Invalid Master PIN or missing login credentials.';
     }
-
-    const admin = admins[0];
-
-    // Issue Admin JWT
-    const accessToken = jwt.sign(
-      { userId: admin.id, username: admin.username, role: admin.role },
-      process.env.JWT_ADMIN_SECRET || 'admin_secret',
-      { expiresIn: '15m' }
-    );
-
-    return res.status(200).json({
-      success: true,
-      accessToken,
-      admin
-    });
-  } catch (error) {
-    return res.status(500).json({ error: 'Database Connection Error' });
-  }
-}`,
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Shyam Game - Admin Portal Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #090d16; color: #e2e8f0; font-family: system-ui; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .admin-card { background: #131b2e; border: 1px solid #1e293b; border-radius: 20px; padding: 2.5rem; width: 100%; max-width: 440px; }
+    </style>
+</head>
+<body>
+    <div class="admin-card">
+        <h3 class="text-info text-center font-bold mb-3">🛡️ ADMIN PORTAL LOGIN</h3>
+        <?php if ($error): ?><div class="alert alert-danger py-2 rounded-3 text-center small mb-3"><?= htmlspecialchars($error) ?></div><?php endif; ?>
+        <form method="POST" action="index.php">
+            <div class="mb-3"><label class="small text-secondary fw-bold">Admin Username</label><input type="text" name="username" class="form-control" required></div>
+            <div class="mb-3"><label class="small text-secondary fw-bold">Password</label><input type="password" name="password" class="form-control" required></div>
+            <div class="mb-4"><label class="small text-secondary fw-bold">Master Security PIN</label><input type="password" name="pin" class="form-control" placeholder="Default: 1234" required></div>
+            <button type="submit" class="btn btn-info w-100 fw-bold">AUTHENTICATE ADMIN</button>
+        </form>
+    </div>
+</body>
+</html>`,
     },
     {
       id: 'database.php',
@@ -363,10 +426,10 @@ CREATE TABLE IF NOT EXISTS \`notifications\` (
           </div>
           <div>
             <h1 className="text-xl font-bold text-white flex items-center gap-2">
-              <span>Vercel Dual-App & Production Backend Export</span>
+              <span>InfinityFree Core PHP 8 & MySQL Production Export</span>
             </h1>
             <p className="text-xs text-slate-400">
-              Complete vercel.json, JWT APIs, separate Player & Admin configs, and SQL Schema.
+              Complete Core PHP 8 files, role-based PHP sessions, database config, and Apache .htaccess.
             </p>
           </div>
         </div>
@@ -420,10 +483,10 @@ CREATE TABLE IF NOT EXISTS \`notifications\` (
               Deployment Architecture
             </span>
             <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-400">
-              <li>Player Domain: play.shyamgame.vercel.app</li>
-              <li>Admin Domain: admin.shyamgame.vercel.app</li>
-              <li>JWT + Refresh Token Security</li>
-              <li>MySQL / MariaDB Production Schema</li>
+              <li>Player Panel: /player (PHP Session)</li>
+              <li>Admin Panel: /admin (PHP Session)</li>
+              <li>Core PHP 8 + PDO MySQL Database</li>
+              <li>InfinityFree Apache (.htaccess) Config</li>
             </ul>
           </div>
         </div>
