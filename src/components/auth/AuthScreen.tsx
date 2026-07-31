@@ -185,7 +185,7 @@ export const AuthScreen: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. user_rahul89 or superadmin"
+                  placeholder="Enter your username or email"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500"
@@ -231,35 +231,6 @@ export const AuthScreen: React.FC = () => {
               <span>Log In To Account</span>
               <ArrowRight className="w-4 h-4" />
             </button>
-
-            {/* Demo Quick Logins */}
-            <div className="pt-4 border-t border-slate-800/80 text-center space-y-2">
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Quick Demo Login Presets</span>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUsername('superadmin');
-                    setPassword('admin123');
-                    login('superadmin', 'admin123');
-                  }}
-                  className="flex-1 py-2 rounded-xl bg-slate-950 border border-cyan-800 text-cyan-400 text-[11px] font-bold hover:bg-slate-800 transition-colors"
-                >
-                  Admin Login
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUsername('user_rahul89');
-                    setPassword('user123');
-                    login('user_rahul89', 'user123');
-                  }}
-                  className="flex-1 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 text-[11px] font-bold hover:bg-slate-800 transition-colors"
-                >
-                  Player Login
-                </button>
-              </div>
-            </div>
           </form>
         )}
 

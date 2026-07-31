@@ -141,38 +141,7 @@ import {
   initialActivityLogs,
 } from '../data/mockData';
 
-const initialNotificationsList: AppNotification[] = [
-  {
-    id: 'notif-1',
-    title: 'Draw Result Declared',
-    description: '2D Lottery Draw DRW-2D-9842 result declared as [89].',
-    type: 'success',
-    timestamp: '14:02',
-    createdAtMs: Date.now() - 120000,
-    read: false,
-    fingerprint: 'draw result declared|2d lottery draw drw-2d-9842 result declared as [89].',
-  },
-  {
-    id: 'notif-2',
-    title: 'Point Request Approved',
-    description: 'SuperDistributer "super_royal" credited 100,000 points.',
-    type: 'info',
-    timestamp: '13:45',
-    createdAtMs: Date.now() - 900000,
-    read: false,
-    fingerprint: 'point request approved|superdistributer "super_royal" credited 100,000 points.',
-  },
-  {
-    id: 'notif-3',
-    title: 'System Security Audit',
-    description: 'Master Admin logged in from IP 103.110.244.18.',
-    type: 'warning',
-    timestamp: '12:10',
-    createdAtMs: Date.now() - 3600000,
-    read: true,
-    fingerprint: 'system security audit|master admin logged in from ip 103.110.244.18.',
-  },
-];
+const initialNotificationsList: AppNotification[] = [];
 
 const initialGameControls: GameControlConfig[] = [
   {
@@ -336,7 +305,29 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
 
-  // Authentication & Session state
+  // Ensure clear production state by wiping legacy demo localStorage keys on version upgrade
+  const PROD_VERSION = 'shyam_prod_v3';
+  if (typeof window !== 'undefined' && localStorage.getItem('shyam_app_version') !== PROD_VERSION) {
+    [
+      'shyam_deposit_requests',
+      'shyam_withdrawal_requests',
+      'shyam_referral_records',
+      'shyam_super_distributers',
+      'shyam_distributers',
+      'shyam_retailers',
+      'shyam_users',
+      'shyam_game_tickets',
+      'shyam_transactions',
+      'shyam_live_results',
+      'shyam_notifications_history',
+      'shyam_player_session',
+      'shyam_current_user',
+      'shyam_shown_notif_ids',
+    ].forEach((key) => localStorage.removeItem(key));
+    localStorage.setItem('shyam_app_version', PROD_VERSION);
+  }
+
+  // Security & Admin Credentials
   const [adminPassword, setAdminPassword] = useState<string>(() => {
     return localStorage.getItem('shyam_admin_password') || 'Admin@123';
   });
@@ -379,22 +370,6 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     referralCode: 'REF-ADMIN',
   };
 
-  const defaultPlayerUser: UserAccount = {
-    id: 'usr-101',
-    name: 'Suresh Kumar',
-    username: 'player_suresh',
-    role: 'User',
-    points: 4500,
-    creditLimit: 0,
-    status: 'active',
-    commissionRate: 0,
-    phone: '9876543210',
-    email: 'suresh@gmail.com',
-    createdAt: '2025-01-15',
-    lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
-    referralCode: 'REF-SURESH',
-  };
-
   // Dedicated Admin Session
   const [adminSession, setAdminSession] = useState<{ isLoggedIn: boolean; user: UserAccount | null }>(() => {
     const saved = localStorage.getItem('shyam_admin_session');
@@ -410,7 +385,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (saved) {
       try { return JSON.parse(saved); } catch (e) { /* fallback */ }
     }
-    return { isLoggedIn: true, user: defaultPlayerUser };
+    return { isLoggedIn: false, user: null };
   });
 
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
@@ -457,66 +432,17 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Deposit & Withdrawal Requests
   const [depositRequests, setDepositRequests] = useState<DepositRequest[]>(() => {
     const saved = localStorage.getItem('shyam_deposit_requests');
-    return saved
-      ? JSON.parse(saved)
-      : [
-          {
-            id: 'dep-101',
-            username: 'user_rahul89',
-            userRole: 'User',
-            amount: 5000,
-            paymentMethod: 'UPI',
-            utrNumber: 'UTR9842105821',
-            status: 'Pending',
-            createdAt: '2026-07-30 13:10',
-            remark: 'UPI GooglePay Deposit',
-          },
-          {
-            id: 'dep-102',
-            username: 'user_vikram_win',
-            userRole: 'User',
-            amount: 10000,
-            paymentMethod: 'Bank Transfer',
-            utrNumber: 'AXISB8830112',
-            status: 'Approved',
-            createdAt: '2026-07-30 10:20',
-            remark: 'Approved by Admin',
-          },
-        ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>(() => {
     const saved = localStorage.getItem('shyam_withdrawal_requests');
-    return saved
-      ? JSON.parse(saved)
-      : [
-          {
-            id: 'wd-201',
-            username: 'user_vikram_win',
-            userRole: 'User',
-            amount: 3500,
-            paymentMethod: 'UPI',
-            accountDetails: 'vikram@upi (GooglePay)',
-            status: 'Pending',
-            createdAt: '2026-07-30 14:05',
-          },
-        ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [referralRecords, setReferralRecords] = useState<ReferralRecord[]>(() => {
     const saved = localStorage.getItem('shyam_referral_records');
-    return saved
-      ? JSON.parse(saved)
-      : [
-          {
-            id: 'ref-1',
-            referrerUsername: 'user_rahul89',
-            referredUsername: 'user_amit_p',
-            referralCode: 'REF-RAHUL89',
-            bonusPoints: 200,
-            date: '2026-03-15',
-          },
-        ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   useEffect(() => {
@@ -1487,34 +1413,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return { success: true };
     }
 
-    // Default fallback demo player if username starts with player or user or numeric phone
-    if (normUser === 'player' || normUser === 'demo' || normUser.startsWith('player') || normUser.startsWith('user') || /^\d{10}$/.test(normUser)) {
-      const demoPlayer: UserAccount = {
-        id: `usr-${Date.now()}`,
-        name: usernameInput,
-        username: usernameInput,
-        role: 'User',
-        points: 500,
-        creditLimit: 0,
-        status: 'active',
-        commissionRate: 0,
-        phone: usernameInput,
-        createdAt: '2026-01-01',
-        referralCode: `REF-${usernameInput.toUpperCase()}`,
-      };
-
-      const sess = { isLoggedIn: true, user: demoPlayer };
-      setPlayerSession(sess);
-      setIsLoggedIn(true);
-      setCurrentUser(demoPlayer);
-      setActiveRole('Player');
-      setCurrentPage('user_game_portal');
-      addToast('Player Logged In', `Welcome back, ${usernameInput}!`, 'success');
-      return { success: true };
-    }
-
-    addToast('Login Failed', 'Invalid Player username/mobile or password.', 'error');
-    return { success: false, message: 'Invalid Player username/mobile or password.' };
+    addToast('Login Failed', 'Account not found. Please register a new account.', 'error');
+    return { success: false, message: 'Invalid username/mobile or account does not exist. Please register.' };
   };
 
   const loginAsAdmin = (usernameInput: string, passwordInput?: string, pinInput?: string): { success: boolean; message?: string } => {

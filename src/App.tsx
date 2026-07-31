@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AdminProvider } from './context/AdminContext';
 
@@ -12,6 +12,10 @@ import { AdminLayout } from './components/layout/AdminLayout';
 import { PlayerLayout } from './components/layout/PlayerLayout';
 
 export default function App() {
+  useEffect(() => {
+    document.title = 'Shyam111';
+  }, []);
+
   return (
     <BrowserRouter>
       <AdminProvider>

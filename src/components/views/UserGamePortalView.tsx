@@ -24,7 +24,7 @@ export const UserGamePortalView: React.FC = () => {
   // Active user account for player session
   const activeUser = (playerSession?.isLoggedIn && playerSession.user)
     ? playerSession.user
-    : (currentUser || users.find((u) => u.username === 'player_suresh') || users[0]);
+    : (currentUser || (users.length > 0 ? users[0] : null));
 
   const [activeTab, setActiveTab] = useState<'2d' | '3d' | 'lucky12'>('2d');
   const [betAmount, setBetAmount] = useState<number>(100);

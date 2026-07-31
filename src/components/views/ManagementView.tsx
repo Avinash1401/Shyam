@@ -124,7 +124,7 @@ export const ManagementView: React.FC<ManagementViewProps> = ({ role }) => {
       name: newName,
       username: newUsername,
       role,
-      parentName: newParent || (role === 'SuperDistributer' ? 'superadmin' : 'super_royal'),
+      parentName: newParent || (role === 'SuperDistributer' ? 'admin' : 'admin'),
       points: Number(newPoints),
       creditLimit: Number(newCreditLimit),
       status: 'active',
@@ -436,7 +436,7 @@ export const ManagementView: React.FC<ManagementViewProps> = ({ role }) => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. super_royal2"
+                  placeholder="e.g. agent_user1"
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-xl px-3 py-2 text-white focus:outline-none"
@@ -448,7 +448,7 @@ export const ManagementView: React.FC<ManagementViewProps> = ({ role }) => {
                   <label className="block text-slate-300 font-semibold mb-1">Parent Username</label>
                   <input
                     type="text"
-                    placeholder="e.g. super_royal"
+                    placeholder="e.g. admin"
                     value={newParent}
                     onChange={(e) => setNewParent(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-xl px-3 py-2 text-white focus:outline-none"
