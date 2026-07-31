@@ -97,10 +97,10 @@ export const AdminViewRenderer: React.FC<{ currentPage: string }> = ({ currentPa
 };
 
 export const AdminLayout: React.FC = () => {
-  const { isLoggedIn, activeRole, currentPage, mustChangeAdminPassword } = useAdmin();
+  const { adminSession, currentPage, mustChangeAdminPassword } = useAdmin();
 
-  // If not logged in or role is not Admin, redirect to /admin/login
-  if (!isLoggedIn || activeRole !== 'Admin') {
+  // If admin session is not active, redirect strictly to /admin/login
+  if (!adminSession?.isLoggedIn) {
     return <Navigate to="/admin/login" replace />;
   }
 

@@ -5,7 +5,7 @@ import { Gamepad2, Lock, User, Eye, EyeOff, ArrowRight, ShieldCheck, Gift } from
 
 export const PlayerLoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { loginAsPlayer, isLoggedIn, activeRole } = useAdmin();
+  const { loginAsPlayer, playerSession } = useAdmin();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -13,19 +13,19 @@ export const PlayerLoginPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // If already logged in as player, navigate to /player
+  // If already logged in as player, navigate to /player/dashboard
   React.useEffect(() => {
-    if (isLoggedIn && activeRole === 'Player') {
-      navigate('/player');
+    if (playerSession?.isLoggedIn) {
+      navigate('/player/dashboard', { replace: true });
     }
-  }, [isLoggedIn, activeRole, navigate]);
+  }, [playerSession, navigate]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
     if (!username.trim()) {
-      setErrorMsg('Please enter your player username.');
+      setErrorMsg('Please enter your Mobile Number or Username.');
       return;
     }
 
@@ -35,7 +35,7 @@ export const PlayerLoginPage: React.FC = () => {
       setLoading(false);
 
       if (res.success) {
-        navigate('/player');
+        navigate('/player/dashboard', { replace: true });
       } else {
         setErrorMsg(res.message || 'Invalid player credentials.');
       }
@@ -81,14 +81,14 @@ export const PlayerLoginPage: React.FC = () => {
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Player Username / ID</label>
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Mobile Number / Username</label>
             <div className="relative">
               <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter player username (e.g., player1)"
+                placeholder="Mobile phone or username (e.g. 9876543210)"
                 required
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition-all"
               />

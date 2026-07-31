@@ -17,19 +17,21 @@ export default function App() {
       <AdminProvider>
         <Routes>
           {/* Default root redirects to Player portal */}
-          <Route path="/" element={<Navigate to="/player" replace />} />
+          <Route path="/" element={<Navigate to="/player/dashboard" replace />} />
 
           {/* Player Dedicated Routes */}
           <Route path="/player/login" element={<PlayerLoginPage />} />
           <Route path="/player/register" element={<PlayerRegisterPage />} />
+          <Route path="/player/dashboard" element={<PlayerLayout />} />
           <Route path="/player/*" element={<PlayerLayout />} />
 
           {/* Admin Dedicated Routes */}
           <Route path="/admin/login" element={<AdminLoginPage />} />
+          <Route path="/admin/dashboard" element={<AdminLayout />} />
           <Route path="/admin/*" element={<AdminLayout />} />
 
           {/* Catch-all route */}
-          <Route path="*" element={<Navigate to="/player" replace />} />
+          <Route path="*" element={<Navigate to="/player/dashboard" replace />} />
         </Routes>
       </AdminProvider>
     </BrowserRouter>

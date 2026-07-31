@@ -235,6 +235,8 @@ interface AdminContextType {
   setSearchTerm: (term: string) => void;
 
   // Session & Auth
+  adminSession: { isLoggedIn: boolean; user: UserAccount | null };
+  playerSession: { isLoggedIn: boolean; user: UserAccount | null };
   isLoggedIn: boolean;
   currentUser: UserAccount | null;
   activeRole: 'Admin' | 'Player';
@@ -248,6 +250,8 @@ interface AdminContextType {
   forgotPasswordOTP: (emailOrPhone: string) => { success: boolean; otp?: string; message: string };
   verifyOTPAndReset: (emailOrPhone: string, otp: string, newPassword: string) => boolean;
   logout: () => void;
+  logoutAdmin: () => void;
+  logoutPlayer: () => void;
   switchSessionRole: (role: 'Admin' | 'Player') => void;
 
   // Accounts Data
@@ -334,20 +338,22 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   // Authentication & Session state
   const [adminPassword, setAdminPassword] = useState<string>(() => {
-    return localStorage.getItem('shyam_admin_password') || 'ChangeMe@123';
+    return localStorage.getItem('shyam_admin_password') || 'Admin@123';
   });
 
   const [mustChangeAdminPassword, setMustChangeAdminPassword] = useState<boolean>(() => {
-    const savedPassword = localStorage.getItem('shyam_admin_password') || 'ChangeMe@123';
-    return savedPassword === 'ChangeMe@123';
+    const savedPassword = localStorage.getItem('shyam_admin_password') || 'Admin@123';
+    const mustChangeSaved = localStorage.getItem('shyam_admin_must_change');
+    if (mustChangeSaved !== null) return JSON.parse(mustChangeSaved);
+    return savedPassword === 'Admin@123' || savedPassword === 'ChangeMe@123';
   });
 
   const changeAdminPassword = (newPassword: string): { success: boolean; message?: string } => {
     if (!newPassword || newPassword.length < 6) {
       return { success: false, message: 'Password must be at least 6 characters long.' };
     }
-    if (newPassword === 'ChangeMe@123') {
-      return { success: false, message: 'New password cannot be the default ChangeMe@123.' };
+    if (newPassword === 'Admin@123' || newPassword === 'ChangeMe@123') {
+      return { success: false, message: 'New password cannot be the default password (Admin@123).' };
     }
     setAdminPassword(newPassword);
     setMustChangeAdminPassword(false);
@@ -357,20 +363,10 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return { success: true };
   };
 
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    const saved = localStorage.getItem('shyam_logged_in');
-    return saved !== null ? JSON.parse(saved) : true;
-  });
-
-  const [activeRole, setActiveRole] = useState<'Admin' | 'Player'>(() => {
-    const saved = localStorage.getItem('shyam_active_role');
-    return (saved as 'Admin' | 'Player') || 'Admin';
-  });
-
   const defaultAdminUser: UserAccount = {
     id: 'usr-admin',
     name: 'Master Admin',
-    username: 'superadmin',
+    username: 'admin',
     role: 'SuperAdmin',
     points: 1000000,
     creditLimit: 5000000,
@@ -383,10 +379,63 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     referralCode: 'REF-ADMIN',
   };
 
+  const defaultPlayerUser: UserAccount = {
+    id: 'usr-101',
+    name: 'Suresh Kumar',
+    username: 'player_suresh',
+    role: 'User',
+    points: 4500,
+    creditLimit: 0,
+    status: 'active',
+    commissionRate: 0,
+    phone: '9876543210',
+    email: 'suresh@gmail.com',
+    createdAt: '2025-01-15',
+    lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
+    referralCode: 'REF-SURESH',
+  };
+
+  // Dedicated Admin Session
+  const [adminSession, setAdminSession] = useState<{ isLoggedIn: boolean; user: UserAccount | null }>(() => {
+    const saved = localStorage.getItem('shyam_admin_session');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* fallback */ }
+    }
+    return { isLoggedIn: true, user: defaultAdminUser };
+  });
+
+  // Dedicated Player Session
+  const [playerSession, setPlayerSession] = useState<{ isLoggedIn: boolean; user: UserAccount | null }>(() => {
+    const saved = localStorage.getItem('shyam_player_session');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* fallback */ }
+    }
+    return { isLoggedIn: true, user: defaultPlayerUser };
+  });
+
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    const saved = localStorage.getItem('shyam_logged_in');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  const [activeRole, setActiveRole] = useState<'Admin' | 'Player'>(() => {
+    const saved = localStorage.getItem('shyam_active_role');
+    return (saved as 'Admin' | 'Player') || 'Admin';
+  });
+
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
     const saved = localStorage.getItem('shyam_current_user');
     return saved ? JSON.parse(saved) : defaultAdminUser;
   });
+
+  // Sync session changes to localStorage
+  useEffect(() => {
+    localStorage.setItem('shyam_admin_session', JSON.stringify(adminSession));
+  }, [adminSession]);
+
+  useEffect(() => {
+    localStorage.setItem('shyam_player_session', JSON.stringify(playerSession));
+  }, [playerSession]);
 
   // Sync login status and active role
   useEffect(() => {
@@ -1302,14 +1351,19 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const loginAsPlayer = (usernameInput: string, passwordInput?: string): { success: boolean; message?: string } => {
     const normUser = usernameInput.trim().toLowerCase();
+    const cleanPhone = normUser.replace(/[\s\+]+/g, '');
+
     const allAccounts = [...users, ...retailers, ...distributers, ...superDistributers];
     const found = allAccounts.find(
-      (u) => u.username.toLowerCase() === normUser || (u.email && u.email.toLowerCase() === normUser)
+      (u) =>
+        u.username.toLowerCase() === normUser ||
+        (u.email && u.email.toLowerCase() === normUser) ||
+        (u.phone && u.phone.replace(/[\s\+]+/g, '').includes(cleanPhone) && cleanPhone.length >= 4)
     );
 
     if (found) {
       if (found.status === 'blocked' || found.status === 'suspended') {
-        addToast('Account Blocked', 'Your account has been suspended.', 'error');
+        addToast('Account Blocked', 'Your player account has been suspended.', 'error');
         return { success: false, message: 'Your player account has been suspended.' };
       }
 
@@ -1319,6 +1373,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         referralCode: found.referralCode || `REF-${found.username.toUpperCase()}`,
       };
 
+      const sess = { isLoggedIn: true, user: updatedAcc };
+      setPlayerSession(sess);
       setIsLoggedIn(true);
       setCurrentUser(updatedAcc);
       setActiveRole('Player');
@@ -1327,8 +1383,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return { success: true };
     }
 
-    // Default fallback demo player
-    if (normUser === 'player' || normUser === 'demo' || normUser.startsWith('player')) {
+    // Default fallback demo player if username starts with player or user or numeric phone
+    if (normUser === 'player' || normUser === 'demo' || normUser.startsWith('player') || normUser.startsWith('user') || /^\d{10}$/.test(normUser)) {
       const demoPlayer: UserAccount = {
         id: `usr-${Date.now()}`,
         name: usernameInput,
@@ -1338,9 +1394,13 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         creditLimit: 0,
         status: 'active',
         commissionRate: 0,
+        phone: usernameInput,
         createdAt: '2026-01-01',
         referralCode: `REF-${usernameInput.toUpperCase()}`,
       };
+
+      const sess = { isLoggedIn: true, user: demoPlayer };
+      setPlayerSession(sess);
       setIsLoggedIn(true);
       setCurrentUser(demoPlayer);
       setActiveRole('Player');
@@ -1349,8 +1409,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return { success: true };
     }
 
-    addToast('Login Failed', 'Invalid Player username or password.', 'error');
-    return { success: false, message: 'Invalid Player username or password.' };
+    addToast('Login Failed', 'Invalid Player username/mobile or password.', 'error');
+    return { success: false, message: 'Invalid Player username/mobile or password.' };
   };
 
   const loginAsAdmin = (usernameInput: string, passwordInput?: string, pinInput?: string): { success: boolean; message?: string } => {
@@ -1363,8 +1423,14 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
 
     if (normUser === 'admin' || normUser === 'superadmin' || normUser === 'masteradmin') {
-      // Validate Admin password
-      if (passwordInput && passwordInput !== adminPassword && passwordInput !== 'ChangeMe@123' && passwordInput !== 'admin123') {
+      // Validate Admin password (Admin@123 or ChangeMe@123 or saved password)
+      if (
+        passwordInput &&
+        passwordInput !== adminPassword &&
+        passwordInput !== 'Admin@123' &&
+        passwordInput !== 'ChangeMe@123' &&
+        passwordInput !== 'admin123'
+      ) {
         addToast('Login Failed', 'Incorrect Admin password.', 'error');
         return { success: false, message: 'Incorrect Admin password.' };
       }
@@ -1384,13 +1450,21 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
         referralCode: 'REF-ADMIN',
       };
+
+      const sess = { isLoggedIn: true, user: adminAcc };
+      setAdminSession(sess);
       setIsLoggedIn(true);
       setCurrentUser(adminAcc);
       setActiveRole('Admin');
       setCurrentPage('dashboard');
 
-      // Check if password change is required
-      if (adminPassword === 'ChangeMe@123' || passwordInput === 'ChangeMe@123') {
+      // Check if default password change is required
+      if (
+        adminPassword === 'Admin@123' ||
+        adminPassword === 'ChangeMe@123' ||
+        passwordInput === 'Admin@123' ||
+        passwordInput === 'ChangeMe@123'
+      ) {
         setMustChangeAdminPassword(true);
         addToast('Mandatory Action', 'Default password detected. Please set a new Admin password.', 'warning');
       } else {
@@ -1410,6 +1484,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         return { success: false, message: 'Your admin account is suspended.' };
       }
 
+      const sess = { isLoggedIn: true, user: found };
+      setAdminSession(sess);
       setIsLoggedIn(true);
       setCurrentUser(found);
       setActiveRole('Admin');
@@ -1563,10 +1639,27 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
+  const logoutAdmin = () => {
+    const emptySess = { isLoggedIn: false, user: null };
+    setAdminSession(emptySess);
+    localStorage.setItem('shyam_admin_session', JSON.stringify(emptySess));
+    addToast('Admin Logged Out', 'You have been logged out of the Admin portal.', 'info');
+  };
+
+  const logoutPlayer = () => {
+    const emptySess = { isLoggedIn: false, user: null };
+    setPlayerSession(emptySess);
+    localStorage.setItem('shyam_player_session', JSON.stringify(emptySess));
+    addToast('Player Logged Out', 'You have logged out of Shyam Game.', 'info');
+  };
+
   const logout = () => {
+    logoutAdmin();
+    logoutPlayer();
     setIsLoggedIn(false);
     setCurrentUser(null);
-    addToast('Logged Out', 'You have been logged out safely.', 'info');
+    localStorage.removeItem('shyam_logged_in');
+    localStorage.removeItem('shyam_current_user');
   };
 
   // Deposit & Withdrawal Requests
@@ -1691,6 +1784,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         toggleSidebar,
         searchTerm,
         setSearchTerm,
+        adminSession,
+        playerSession,
         isLoggedIn,
         currentUser,
         activeRole,
@@ -1704,6 +1799,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         forgotPasswordOTP,
         verifyOTPAndReset,
         logout,
+        logoutAdmin,
+        logoutPlayer,
         switchSessionRole,
         depositRequests,
         withdrawalRequests,

@@ -5,7 +5,7 @@ import { Gamepad2, Lock, User, Mail, Phone, Gift, ArrowRight, ShieldCheck, Check
 
 export const PlayerRegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const { register } = useAdmin();
+  const { register, playerSession } = useAdmin();
 
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
@@ -16,6 +16,13 @@ export const PlayerRegisterPage: React.FC = () => {
 
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // If already logged in as player, redirect to /player/dashboard
+  React.useEffect(() => {
+    if (playerSession?.isLoggedIn) {
+      navigate('/player/dashboard', { replace: true });
+    }
+  }, [playerSession, navigate]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +39,7 @@ export const PlayerRegisterPage: React.FC = () => {
       setLoading(false);
 
       if (res.success) {
-        navigate('/player');
+        navigate('/player/dashboard', { replace: true });
       } else {
         setErrorMsg(res.message);
       }

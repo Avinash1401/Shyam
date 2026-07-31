@@ -46,15 +46,10 @@ export const PlayerViewRenderer: React.FC<{ currentPage: string }> = ({ currentP
 };
 
 export const PlayerLayout: React.FC = () => {
-  const { isLoggedIn, activeRole, currentPage } = useAdmin();
+  const { playerSession, currentPage } = useAdmin();
 
-  // If Admin tries to open /player while logged in as admin, redirect to /admin
-  if (isLoggedIn && activeRole === 'Admin') {
-    return <Navigate to="/admin" replace />;
-  }
-
-  // If not logged in or role is not Player, redirect to /player/login
-  if (!isLoggedIn || activeRole !== 'Player') {
+  // If player session is not active, redirect strictly to /player/login
+  if (!playerSession?.isLoggedIn) {
     return <Navigate to="/player/login" replace />;
   }
 

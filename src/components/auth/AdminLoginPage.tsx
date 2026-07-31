@@ -5,21 +5,21 @@ import { Shield, Key, Lock, User, Eye, EyeOff, ArrowRight, ShieldAlert, Sparkles
 
 export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { loginAsAdmin, isLoggedIn, activeRole } = useAdmin();
+  const { loginAsAdmin, adminSession } = useAdmin();
 
   const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('ChangeMe@123');
+  const [password, setPassword] = useState('Admin@123');
   const [pin, setPin] = useState('1234');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // If already logged in as Admin, navigate to /admin
+  // If already logged in as Admin, navigate to /admin/dashboard
   React.useEffect(() => {
-    if (isLoggedIn && activeRole === 'Admin') {
-      navigate('/admin');
+    if (adminSession?.isLoggedIn) {
+      navigate('/admin/dashboard', { replace: true });
     }
-  }, [isLoggedIn, activeRole, navigate]);
+  }, [adminSession, navigate]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +36,7 @@ export const AdminLoginPage: React.FC = () => {
       setLoading(false);
 
       if (res.success) {
-        navigate('/admin');
+        navigate('/admin/dashboard', { replace: true });
       } else {
         setErrorMsg(res.message || 'Invalid admin credentials or authorization failed.');
       }
@@ -69,7 +69,7 @@ export const AdminLoginPage: React.FC = () => {
           </div>
           <div className="font-mono text-[11px] text-slate-300 pl-6 space-y-0.5">
             <div>Username: <span className="text-cyan-300 font-bold">admin</span></div>
-            <div>Password: <span className="text-amber-300 font-bold">ChangeMe@123</span></div>
+            <div>Password: <span className="text-amber-300 font-bold">Admin@123</span></div>
             <div>PIN: <span className="text-cyan-300 font-bold">1234</span></div>
           </div>
           <p className="text-[10px] text-slate-400 pl-6 pt-0.5">
