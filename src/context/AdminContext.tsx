@@ -213,9 +213,9 @@ interface AdminContextType {
   mustChangeAdminPassword?: boolean;
   changeAdminPassword: (newPassword: string) => { success: boolean; message?: string };
   login: (username: string, password?: string) => boolean;
-  loginAsPlayer: (username: string, password?: string) => { success: boolean; message?: string };
+  loginAsPlayer: (username: string, password?: string) => Promise<{ success: boolean; message?: string }>;
   loginAsAdmin: (username: string, password?: string, pin?: string) => { success: boolean; message?: string };
-  register: (name: string, username: string, password: string, email: string, phone: string, refCode?: string) => { success: boolean; message: string };
+  register: (name: string, username: string, password: string, email: string, phone: string, refCode?: string) => Promise<{ success: boolean; message: string }>;
   forgotPasswordOTP: (emailOrPhone: string) => { success: boolean; otp?: string; message: string };
   verifyOTPAndReset: (emailOrPhone: string, otp: string, newPassword: string) => boolean;
   logout: () => void;
@@ -284,7 +284,7 @@ interface AdminContextType {
 
   // Game & Result Controls
   declareWinningResult: (gameType: '2D Lottery' | '3D Lottery' | 'Lucky 12' | '12 Card', drawNum: string, result: string, adminId?: string) => void;
-  placeBet: (username: string, gameType: '2D Lottery' | '3D Lottery' | 'Lucky 12' | '12 Card', selectedNumbers: string[], amount: number) => boolean;
+  placeBet: (username: string, gameType: '2D Lottery' | '3D Lottery' | 'Lucky 12' | '12 Card', selectedNumbers: string[], amount: number) => Promise<boolean>;
   cancelTicket: (ticketId: string, reason: string) => boolean;
   updateWinPercentage: (gameType: string, rtp: number, margin: number, mode: 'Auto' | 'Manual' | 'High Margin') => void;
   kickOnlinePlayer: (id: string) => void;
@@ -1147,106 +1147,28 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     } catch (err) {}
   };
 
-  const placeBet = (
+  const placeBet = async (
     username: string,
     gameType: '2D Lottery' | '3D Lottery' | 'Lucky 12' | '12 Card',
     selectedNumbers: string[],
     amount: number
-  ): boolean => {
-    const gc = gameControls.find((c) => c.gameType === gameType);
-    if (gc) {
-      if (gc.status === 'Stopped') {
-        addToast('Game Stopped', `${gameType} is currently stopped by Admin.`, 'error');
-        return false;
-      }
-      if (gc.bettingLocked) {
-        addToast('Betting Closed', `Betting is locked for ${gameType} right now.`, 'warning');
-        return false;
-      }
-      if (amount < gc.minBet) {
-        addToast('Below Min Bet', `Minimum bet for ${gameType} is ₹${gc.minBet}`, 'error');
-        return false;
-      }
-      if (amount > gc.maxBet) {
-        addToast('Exceeds Max Bet', `Maximum bet limit for ${gameType} is ₹${gc.maxBet}`, 'error');
-        return false;
-      }
-    }
-
-    if (amount <= 0) {
-      addToast('Invalid Bet', 'Bet amount must be greater than zero.', 'error');
-      return false;
-    }
-
-    if (selectedNumbers.length === 0) {
-      addToast('No Selection', 'Please select at least one number or symbol.', 'error');
-      return false;
-    }
-
-    // Find real user (check users array, playerSession, currentUser)
-    let user = users.find(
-      (u) =>
-        u.username.toLowerCase() === username.toLowerCase() ||
-        (u.phone && u.phone.includes(username)) ||
-        u.id === username
-    );
-
-    if (!user && playerSession.isLoggedIn && playerSession.user) {
-      user = playerSession.user;
-    }
-    if (!user && currentUser) {
-      user = currentUser;
-    }
-
-    if (!user) {
-      addToast('User Error', 'Active registered user account not found.', 'error');
-      return false;
-    }
-
-    if (user.status !== 'active') {
-      addToast('Account Suspended', `User ${user.username} is ${user.status}. Cannot place bet.`, 'error');
-      return false;
-    }
-
-    if (user.points < amount) {
-      addToast('Insufficient Balance', `Wallet balance is ₹${user.points.toLocaleString()}. Needed: ₹${amount.toLocaleString()}.`, 'error');
-      return false;
-    }
-
-    const balanceAfter = user.points - amount;
-
-    // Deduct points from user list
-    setUsers((prev) => {
-      const exists = prev.some((u) => u.username === user!.username);
-      if (exists) {
-        return prev.map((u) => (u.username === user!.username ? { ...u, points: balanceAfter } : u));
-      } else {
-        return [{ ...user!, points: balanceAfter }, ...prev];
-      }
-    });
-
-    // Sync player session if matching
-    if (playerSession.user && playerSession.user.username === user.username) {
-      const updatedPlayer = { ...playerSession.user, points: balanceAfter };
-      setPlayerSession({ isLoggedIn: true, user: updatedPlayer });
-    }
-    if (currentUser && currentUser.username === user.username) {
-      setCurrentUser({ ...currentUser, points: balanceAfter });
-    }
-
-    // Create unique IDs
-    const roundId = gc?.currentRoundNo || `ROUND-${Math.floor(1000 + Math.random() * 9000)}`;
-    const ticketNo = `SHM-${Date.now().toString().slice(-6)}`;
-    const txnId = `TXN-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
-
-    const placeBet = async (
-    gameType: '2D Lottery' | '3D Lottery' | 'Lucky 12' | '12 Card',
-    selectedNumbers: string[],
-    amount: number
   ): Promise<boolean> => {
-    const user = currentUser || playerSession.user;
+    const user =
+      users.find((item) => item.username.toLowerCase() === username.toLowerCase()) ||
+      currentUser ||
+      playerSession.user;
     if (!user) {
       addToast('Action Required', 'Please log in to place a bet.', 'error');
+      return false;
+    }
+
+    const gameControl = gameControls.find((item) => item.gameType === gameType);
+    if (gameControl?.status === 'Stopped' || gameControl?.bettingLocked) {
+      addToast('Betting Closed', `${gameType} is currently unavailable.`, 'warning');
+      return false;
+    }
+    if (amount <= 0 || selectedNumbers.length === 0) {
+      addToast('Invalid Bet', 'Select at least one option and enter valid tokens.', 'error');
       return false;
     }
 
@@ -1270,7 +1192,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           setPlayerSession({ isLoggedIn: true, user: updated });
         }
         await fetchBackendSync();
-        addToast('Ticket Confirmed!', `Ticket #${data.ticket.ticketNo} placed for ₹${amount.toLocaleString()}`);
+        addToast('Ticket Confirmed!', `Ticket #${data.ticket.ticketNo} placed for ${amount.toLocaleString()} tokens`);
         return true;
       } else {
         addToast('Bet Failed', data.message || 'Failed to place bet.', 'error');
