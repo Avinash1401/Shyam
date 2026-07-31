@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAdmin } from '../../context/AdminContext';
-import { Gamepad2, Lock, User, Eye, EyeOff, ArrowRight, ShieldCheck, Gift } from 'lucide-react';
+import { Gamepad2, Lock, User, Eye, EyeOff, ArrowRight, Gift } from 'lucide-react';
 
 export const PlayerLoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -88,7 +88,7 @@ export const PlayerLoginPage: React.FC = () => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Mobile phone or username (e.g. 9876543210)"
+                placeholder="Mobile phone or username"
                 required
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition-all"
               />
@@ -98,6 +98,13 @@ export const PlayerLoginPage: React.FC = () => {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Password</label>
+              <button
+                type="button"
+                onClick={() => alert('Please contact customer support or your distributor to reset your password.')}
+                className="text-xs text-amber-400 hover:underline font-medium"
+              >
+                Forgot Password?
+              </button>
             </div>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
@@ -137,14 +144,6 @@ export const PlayerLoginPage: React.FC = () => {
               Create Account
             </Link>
           </p>
-
-          <div className="pt-2 text-[11px] text-slate-500 flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Are you an Administrator?</span>
-            <Link to="/admin/login" className="text-cyan-400 font-bold hover:underline">
-              Admin Portal
-            </Link>
-          </div>
         </div>
       </div>
     </div>

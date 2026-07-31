@@ -477,7 +477,10 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return saved ? JSON.parse(saved) : initialUsers;
   });
 
-  const [onlinePlayers, setOnlinePlayers] = useState<OnlinePlayer[]>(initialOnlinePlayers);
+  const [onlinePlayers, setOnlinePlayers] = useState<OnlinePlayer[]>(() => {
+    const saved = localStorage.getItem('shyam_online_players');
+    return saved ? JSON.parse(saved) : initialOnlinePlayers;
+  });
   const [gameTickets, setGameTickets] = useState<GameTicket[]>(() => {
     const saved = localStorage.getItem('shyam_game_tickets');
     return saved ? JSON.parse(saved) : initialGameTickets;
@@ -522,6 +525,39 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   useEffect(() => {
     localStorage.setItem('shyam_live_results', JSON.stringify(liveResults));
   }, [liveResults]);
+
+  useEffect(() => {
+    localStorage.setItem('shyam_online_players', JSON.stringify(onlinePlayers));
+  }, [onlinePlayers]);
+
+  // Cross-tab real-time database synchronization
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (!e.key) return;
+      try {
+        if (e.key === 'shyam_users' && e.newValue) {
+          setUsers(JSON.parse(e.newValue));
+        } else if (e.key === 'shyam_game_tickets' && e.newValue) {
+          setGameTickets(JSON.parse(e.newValue));
+        } else if (e.key === 'shyam_deposit_requests' && e.newValue) {
+          setDepositRequests(JSON.parse(e.newValue));
+        } else if (e.key === 'shyam_withdrawal_requests' && e.newValue) {
+          setWithdrawalRequests(JSON.parse(e.newValue));
+        } else if (e.key === 'shyam_transactions' && e.newValue) {
+          setTransactions(JSON.parse(e.newValue));
+        } else if (e.key === 'shyam_online_players' && e.newValue) {
+          setOnlinePlayers(JSON.parse(e.newValue));
+        } else if (e.key === 'shyam_live_results' && e.newValue) {
+          setLiveResults(JSON.parse(e.newValue));
+        }
+      } catch (err) {
+        console.error('Storage sync error:', err);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [silenceBettingNotifications, setSilenceBettingNotifications] = useState<boolean>(true);
@@ -1409,6 +1445,27 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setCurrentUser(updatedAcc);
       setActiveRole('Player');
       setCurrentPage('user_game_portal');
+
+      // Update online players monitor
+      setOnlinePlayers((prev) => {
+        const filtered = prev.filter((p) => p.username !== updatedAcc.username);
+        return [
+          {
+            id: `onl-${Date.now()}`,
+            username: updatedAcc.username,
+            role: 'User',
+            parent: updatedAcc.parentName || 'Direct Player',
+            ipAddress: '103.110.244.18',
+            device: 'Web Client',
+            connectedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            currentGame: '2D Lottery',
+            currentBet: 0,
+            status: 'In Lobby',
+          },
+          ...filtered,
+        ];
+      });
+
       addToast('Player Logged In', `Welcome to Shyam Gaming Portal, ${updatedAcc.name}!`, 'success');
       return { success: true };
     }
@@ -1591,6 +1648,23 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setCurrentUser(newUser);
     setActiveRole('Player');
     setCurrentPage('user_game_portal');
+
+    // Update online players monitor
+    setOnlinePlayers((prev) => [
+      {
+        id: `onl-${Date.now()}`,
+        username: newUser.username,
+        role: 'User',
+        parent: newUser.parentName || 'Direct Player',
+        ipAddress: '103.110.244.18',
+        device: 'Web Client',
+        connectedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        currentGame: '2D Lottery',
+        currentBet: 0,
+        status: 'In Lobby',
+      },
+      ...prev,
+    ]);
 
     addToast('Account Registered!', `Welcome to Shyam Panel, ${name}! You received ₹500 signup bonus.`, 'success');
     return { success: true, message: 'Registration successful!' };
