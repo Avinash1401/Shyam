@@ -150,18 +150,6 @@ export const PlayerHeader: React.FC = () => {
                 <span>Referral Earnings</span>
               </button>
 
-              {/* Demo Switch to Admin View */}
-              <button
-                onClick={() => {
-                  switchSessionRole('Admin');
-                  setDropdownOpen(false);
-                }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-cyan-400 hover:bg-slate-800 transition-colors font-bold border border-cyan-900/50"
-              >
-                <Shield className="w-4 h-4" />
-                <span>Switch to Admin Panel</span>
-              </button>
-
               <button
                 onClick={() => {
                   logout();

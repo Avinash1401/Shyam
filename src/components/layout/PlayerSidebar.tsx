@@ -79,19 +79,8 @@ export const PlayerSidebar: React.FC = () => {
         })}
       </div>
 
-      {/* Footer Switch Role / Logout */}
+      {/* Footer Logout */}
       <div className="p-3 border-t border-slate-800 space-y-1">
-        <button
-          onClick={() => switchSessionRole('Admin')}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-cyan-400 bg-slate-950 border border-cyan-800/80 hover:bg-slate-800 transition-colors ${
-            !sidebarOpen && 'justify-center'
-          }`}
-          title="Switch to Admin Panel"
-        >
-          <Shield className="w-4 h-4 shrink-0 text-cyan-400" />
-          {sidebarOpen && <span>Admin Panel</span>}
-        </button>
-
         <button
           onClick={logout}
           className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-950/40 transition-colors ${

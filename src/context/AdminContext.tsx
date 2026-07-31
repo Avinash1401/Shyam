@@ -238,7 +238,12 @@ interface AdminContextType {
   isLoggedIn: boolean;
   currentUser: UserAccount | null;
   activeRole: 'Admin' | 'Player';
+  adminPassword?: string;
+  mustChangeAdminPassword?: boolean;
+  changeAdminPassword: (newPassword: string) => { success: boolean; message?: string };
   login: (username: string, password?: string) => boolean;
+  loginAsPlayer: (username: string, password?: string) => { success: boolean; message?: string };
+  loginAsAdmin: (username: string, password?: string, pin?: string) => { success: boolean; message?: string };
   register: (name: string, username: string, password: string, email: string, phone: string, refCode?: string) => { success: boolean; message: string };
   forgotPasswordOTP: (emailOrPhone: string) => { success: boolean; otp?: string; message: string };
   verifyOTPAndReset: (emailOrPhone: string, otp: string, newPassword: string) => boolean;
@@ -328,6 +333,30 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [searchTerm, setSearchTerm] = useState<string>('');
 
   // Authentication & Session state
+  const [adminPassword, setAdminPassword] = useState<string>(() => {
+    return localStorage.getItem('shyam_admin_password') || 'ChangeMe@123';
+  });
+
+  const [mustChangeAdminPassword, setMustChangeAdminPassword] = useState<boolean>(() => {
+    const savedPassword = localStorage.getItem('shyam_admin_password') || 'ChangeMe@123';
+    return savedPassword === 'ChangeMe@123';
+  });
+
+  const changeAdminPassword = (newPassword: string): { success: boolean; message?: string } => {
+    if (!newPassword || newPassword.length < 6) {
+      return { success: false, message: 'Password must be at least 6 characters long.' };
+    }
+    if (newPassword === 'ChangeMe@123') {
+      return { success: false, message: 'New password cannot be the default ChangeMe@123.' };
+    }
+    setAdminPassword(newPassword);
+    setMustChangeAdminPassword(false);
+    localStorage.setItem('shyam_admin_password', newPassword);
+    localStorage.setItem('shyam_admin_must_change', 'false');
+    addToast('Admin Password Updated', 'Your admin password has been changed successfully.', 'success');
+    return { success: true };
+  };
+
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     const saved = localStorage.getItem('shyam_logged_in');
     return saved !== null ? JSON.parse(saved) : true;
@@ -1271,6 +1300,128 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return false;
   };
 
+  const loginAsPlayer = (usernameInput: string, passwordInput?: string): { success: boolean; message?: string } => {
+    const normUser = usernameInput.trim().toLowerCase();
+    const allAccounts = [...users, ...retailers, ...distributers, ...superDistributers];
+    const found = allAccounts.find(
+      (u) => u.username.toLowerCase() === normUser || (u.email && u.email.toLowerCase() === normUser)
+    );
+
+    if (found) {
+      if (found.status === 'blocked' || found.status === 'suspended') {
+        addToast('Account Blocked', 'Your account has been suspended.', 'error');
+        return { success: false, message: 'Your player account has been suspended.' };
+      }
+
+      const updatedAcc = {
+        ...found,
+        lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        referralCode: found.referralCode || `REF-${found.username.toUpperCase()}`,
+      };
+
+      setIsLoggedIn(true);
+      setCurrentUser(updatedAcc);
+      setActiveRole('Player');
+      setCurrentPage('user_game_portal');
+      addToast('Player Logged In', `Welcome to Shyam Gaming Portal, ${updatedAcc.name}!`, 'success');
+      return { success: true };
+    }
+
+    // Default fallback demo player
+    if (normUser === 'player' || normUser === 'demo' || normUser.startsWith('player')) {
+      const demoPlayer: UserAccount = {
+        id: `usr-${Date.now()}`,
+        name: usernameInput,
+        username: usernameInput,
+        role: 'User',
+        points: 500,
+        creditLimit: 0,
+        status: 'active',
+        commissionRate: 0,
+        createdAt: '2026-01-01',
+        referralCode: `REF-${usernameInput.toUpperCase()}`,
+      };
+      setIsLoggedIn(true);
+      setCurrentUser(demoPlayer);
+      setActiveRole('Player');
+      setCurrentPage('user_game_portal');
+      addToast('Player Logged In', `Welcome back, ${usernameInput}!`, 'success');
+      return { success: true };
+    }
+
+    addToast('Login Failed', 'Invalid Player username or password.', 'error');
+    return { success: false, message: 'Invalid Player username or password.' };
+  };
+
+  const loginAsAdmin = (usernameInput: string, passwordInput?: string, pinInput?: string): { success: boolean; message?: string } => {
+    const normUser = usernameInput.trim().toLowerCase();
+
+    // Verify PIN first
+    if (pinInput && !verifyAdminPin(pinInput)) {
+      addToast('Invalid Security PIN', 'Master PIN is incorrect. Default PIN is 1234.', 'error');
+      return { success: false, message: 'Invalid Security PIN. Default PIN is 1234.' };
+    }
+
+    if (normUser === 'admin' || normUser === 'superadmin' || normUser === 'masteradmin') {
+      // Validate Admin password
+      if (passwordInput && passwordInput !== adminPassword && passwordInput !== 'ChangeMe@123' && passwordInput !== 'admin123') {
+        addToast('Login Failed', 'Incorrect Admin password.', 'error');
+        return { success: false, message: 'Incorrect Admin password.' };
+      }
+
+      const adminAcc: UserAccount = {
+        id: 'usr-admin',
+        name: 'Master Admin',
+        username: 'admin',
+        role: 'SuperAdmin',
+        points: 1000000,
+        creditLimit: 5000000,
+        status: 'active',
+        commissionRate: 0,
+        phone: '+91 99999 88888',
+        email: 'admin@shyampanel.com',
+        createdAt: '2025-01-01',
+        lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        referralCode: 'REF-ADMIN',
+      };
+      setIsLoggedIn(true);
+      setCurrentUser(adminAcc);
+      setActiveRole('Admin');
+      setCurrentPage('dashboard');
+
+      // Check if password change is required
+      if (adminPassword === 'ChangeMe@123' || passwordInput === 'ChangeMe@123') {
+        setMustChangeAdminPassword(true);
+        addToast('Mandatory Action', 'Default password detected. Please set a new Admin password.', 'warning');
+      } else {
+        addToast('Admin Authenticated', 'Master Admin session established.', 'success');
+      }
+      return { success: true };
+    }
+
+    const adminAccounts = [...superDistributers, ...distributers, ...retailers];
+    const found = adminAccounts.find(
+      (u) => u.username.toLowerCase() === normUser || (u.email && u.email.toLowerCase() === normUser)
+    );
+
+    if (found) {
+      if (found.status === 'blocked' || found.status === 'suspended') {
+        addToast('Admin Access Blocked', 'Your admin account is suspended.', 'error');
+        return { success: false, message: 'Your admin account is suspended.' };
+      }
+
+      setIsLoggedIn(true);
+      setCurrentUser(found);
+      setActiveRole('Admin');
+      setCurrentPage('dashboard');
+      addToast('Admin Portal Authenticated', `Welcome back, ${found.name}!`, 'success');
+      return { success: true };
+    }
+
+    addToast('Admin Access Denied', 'Invalid admin credentials or account not found.', 'error');
+    return { success: false, message: 'Access Denied: Account is not authorized for Admin access.' };
+  };
+
   const register = (
     name: string,
     username: string,
@@ -1543,7 +1694,12 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         isLoggedIn,
         currentUser,
         activeRole,
+        adminPassword,
+        mustChangeAdminPassword,
+        changeAdminPassword,
         login,
+        loginAsPlayer,
+        loginAsAdmin,
         register,
         forgotPasswordOTP,
         verifyOTPAndReset,

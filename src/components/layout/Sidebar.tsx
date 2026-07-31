@@ -625,20 +625,12 @@ export const Sidebar: React.FC = () => {
           </div>
         </div>
 
-        {/* Footer Info & Switch to Player View */}
+        {/* Footer Info */}
         <div className="p-3 border-t border-slate-800 bg-slate-950/60 space-y-2">
-          <button
-            onClick={() => switchSessionRole('Player')}
-            className="w-full py-2 rounded-xl bg-slate-900 border border-slate-800 text-cyan-400 text-xs font-bold hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
-          >
-            <Gamepad2 className="w-4 h-4" />
-            <span>Switch to Player Portal</span>
-          </button>
-
           <div className="text-xs text-slate-500 flex items-center justify-between px-1">
             <div>
               <span className="text-slate-400 font-semibold block">Shyam Panel v3.5</span>
-              <span className="text-[10px]">Production Platform</span>
+              <span className="text-[10px]">Master Admin Engine</span>
             </div>
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
           </div>
