@@ -184,6 +184,16 @@ export interface ActivityLog {
   level: 'info' | 'warning' | 'danger';
 }
 
+export interface Lucky12CardConfig {
+  id: string;
+  cardNo: number;
+  name: string;
+  icon: string;
+  imageUrl: string;
+  multiplier: string;
+  status: 'active' | 'disabled';
+}
+
 export type NavigationPage = 
   | 'dashboard'
   | 'superdistributer'
@@ -222,4 +232,5 @@ export type NavigationPage =
   | 'player_support'
   | 'admin_deposits'
   | 'admin_withdrawals'
-  | 'admin_referrals';
+  | 'admin_referrals'
+  | 'admin_lucky12_config';

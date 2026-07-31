@@ -15,7 +15,119 @@ import {
   DepositRequest,
   WithdrawalRequest,
   ReferralRecord,
+  Lucky12CardConfig,
 } from '../types';
+
+export const defaultLucky12Cards: Lucky12CardConfig[] = [
+  {
+    id: 'l12-1',
+    cardNo: 1,
+    name: 'Golden Crown',
+    icon: '👑',
+    imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card1_crown.png',
+    multiplier: '10x',
+    status: 'active',
+  },
+  {
+    id: 'l12-2',
+    cardNo: 2,
+    name: 'Lucky Seven',
+    icon: '7️⃣',
+    imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card2_seven.png',
+    multiplier: '10x',
+    status: 'active',
+  },
+  {
+    id: 'l12-3',
+    cardNo: 3,
+    name: 'Royal Diamond',
+    icon: '💎',
+    imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card3_diamond.png',
+    multiplier: '10x',
+    status: 'active',
+  },
+  {
+    id: 'l12-4',
+    cardNo: 4,
+    name: 'Mystic Star',
+    icon: '⭐',
+    imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card4_star.png',
+    multiplier: '10x',
+    status: 'active',
+  },
+  {
+    id: 'l12-5',
+    cardNo: 5,
+    name: 'Golden Horseshoe',
+    icon: '🧲',
+    imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card5_horseshoe.png',
+    multiplier: '10x',
+    status: 'active',
+  },
+  {
+    id: 'l12-6',
+    cardNo: 6,
+    name: 'Dragon Fortune',
+    icon: '🐉',
+    imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card6_dragon.png',
+    multiplier: '10x',
+    status: 'active',
+  },
+  {
+    id: 'l12-7',
+    cardNo: 7,
+    name: 'Golden Lotus',
+    icon: '🪷',
+    imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card7_lotus.png',
+    multiplier: '10x',
+    status: 'active',
+  },
+  {
+    id: 'l12-8',
+    cardNo: 8,
+    name: 'Royal Eagle',
+    icon: '🦅',
+    imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card8_eagle.png',
+    multiplier: '10x',
+    status: 'active',
+  },
+  {
+    id: 'l12-9',
+    cardNo: 9,
+    name: 'Fire Phoenix',
+    icon: '🔥',
+    imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card9_phoenix.png',
+    multiplier: '10x',
+    status: 'active',
+  },
+  {
+    id: 'l12-10',
+    cardNo: 10,
+    name: 'Jade Lion',
+    icon: '🦁',
+    imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card10_lion.png',
+    multiplier: '10x',
+    status: 'active',
+  },
+  {
+    id: 'l12-11',
+    cardNo: 11,
+    name: 'Ace of Spades',
+    icon: '♠️',
+    imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card11_spade.png',
+    multiplier: '10x',
+    status: 'active',
+  },
+  {
+    id: 'l12-12',
+    cardNo: 12,
+    name: 'Sun God',
+    icon: '☀️',
+    imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card12_sungod.png',
+    multiplier: '10x',
+    status: 'active',
+  },
+];
 import {
   initialSuperDistributers,
   initialDistributers,
@@ -176,6 +288,15 @@ interface AdminContextType {
   liveBetOut: number;
   todayProfitLoss: number;
   systemWalletBalance: number;
+
+  // Lucky 12 Cards Management
+  lucky12Cards: Lucky12CardConfig[];
+  addLucky12Card: (card: Omit<Lucky12CardConfig, 'id'>) => void;
+  updateLucky12Card: (id: string, updates: Partial<Lucky12CardConfig>) => void;
+  deleteLucky12Card: (id: string) => void;
+  bulkUpdateGitHubBaseUrl: (githubBaseUrl: string) => void;
+  resetLucky12CardsToDefault: () => void;
+  importLucky12CardsJSON: (jsonString: string) => boolean;
 
   // Account Actions
   addUserAccount: (account: Omit<UserAccount, 'id' | 'createdAt'>) => void;
@@ -513,6 +634,74 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     retailers.reduce((s, a) => s + a.points, 0) +
     users.reduce((s, a) => s + a.points, 0);
 
+  const [lucky12Cards, setLucky12Cards] = useState<Lucky12CardConfig[]>(() => {
+    const saved = localStorage.getItem('shyam_lucky12_cards');
+    return saved ? JSON.parse(saved) : defaultLucky12Cards;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('shyam_lucky12_cards', JSON.stringify(lucky12Cards));
+  }, [lucky12Cards]);
+
+  const addLucky12Card = (cardData: Omit<Lucky12CardConfig, 'id'>) => {
+    const newId = `l12-${Date.now()}`;
+    const newCard: Lucky12CardConfig = {
+      ...cardData,
+      id: newId,
+      cardNo: cardData.cardNo || lucky12Cards.length + 1,
+    };
+    setLucky12Cards((prev) => [...prev, newCard]);
+    addToast('Lucky 12 Card Added', `Card "${cardData.name}" added successfully.`);
+  };
+
+  const updateLucky12Card = (id: string, updates: Partial<Lucky12CardConfig>) => {
+    setLucky12Cards((prev) =>
+      prev.map((card) => (card.id === id ? { ...card, ...updates } : card))
+    );
+    addToast('Card Updated', 'Lucky 12 card settings saved.');
+  };
+
+  const deleteLucky12Card = (id: string) => {
+    setLucky12Cards((prev) => prev.filter((card) => card.id !== id));
+    addToast('Card Removed', 'Lucky 12 card removed.', 'warning');
+  };
+
+  const bulkUpdateGitHubBaseUrl = (githubBaseUrl: string) => {
+    if (!githubBaseUrl || !githubBaseUrl.trim()) return;
+    const cleanBase = githubBaseUrl.trim().endsWith('/') ? githubBaseUrl.trim() : `${githubBaseUrl.trim()}/`;
+    setLucky12Cards((prev) =>
+      prev.map((card) => {
+        const filename = card.imageUrl.substring(card.imageUrl.lastIndexOf('/') + 1) || `card${card.cardNo}.png`;
+        return {
+          ...card,
+          imageUrl: `${cleanBase}${filename}`,
+        };
+      })
+    );
+    addToast('GitHub URLs Updated', 'All Lucky 12 image links updated to new GitHub repository base URL.');
+  };
+
+  const resetLucky12CardsToDefault = () => {
+    setLucky12Cards(defaultLucky12Cards);
+    addToast('Reset to Default', 'Lucky 12 configuration restored to default GitHub repository assets.');
+  };
+
+  const importLucky12CardsJSON = (jsonString: string): boolean => {
+    try {
+      const parsed = JSON.parse(jsonString);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        setLucky12Cards(parsed);
+        addToast('Import Successful', `Loaded ${parsed.length} Lucky 12 cards from JSON configuration.`);
+        return true;
+      }
+      addToast('Import Failed', 'JSON array must contain at least 1 valid card configuration.', 'error');
+      return false;
+    } catch (err) {
+      addToast('Invalid JSON', 'Could not parse the provided JSON configuration string.', 'error');
+      return false;
+    }
+  };
+
   // Security Admin PIN verification
   const verifyAdminPin = (pin: string): boolean => {
     return pin === '1234' || pin === '9999';
@@ -527,21 +716,13 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const num = Math.floor(Math.random() * 1000);
       return num.toString().padStart(3, '0');
     } else if (gameType === 'Lucky 12') {
-      const luckyCards = [
-        'Card #01 (Golden Crown)',
-        'Card #02 (Lucky Seven)',
-        'Card #03 (Royal Diamond)',
-        'Card #04 (Mystic Star)',
-        'Card #05 (Golden Horseshoe)',
-        'Card #06 (Dragon Fortune)',
-        'Card #07 (Golden Lotus)',
-        'Card #08 (Royal Eagle)',
-        'Card #09 (Fire Phoenix)',
-        'Card #10 (Jade Lion)',
-        'Card #11 (Ace of Spades)',
-        'Card #12 (Sun God)',
-      ];
-      return luckyCards[Math.floor(Math.random() * luckyCards.length)];
+      if (lucky12Cards.length > 0) {
+        const activeCards = lucky12Cards.filter((c) => c.status === 'active');
+        const list = activeCards.length > 0 ? activeCards : lucky12Cards;
+        const pick = list[Math.floor(Math.random() * list.length)];
+        return pick.name;
+      }
+      return 'Golden Crown';
     } else {
       return `Card #${Math.floor(1 + Math.random() * 12)}`;
     }
@@ -1402,6 +1583,13 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         liveBetOut,
         todayProfitLoss,
         systemWalletBalance,
+        lucky12Cards,
+        addLucky12Card,
+        updateLucky12Card,
+        deleteLucky12Card,
+        bulkUpdateGitHubBaseUrl,
+        resetLucky12CardsToDefault,
+        importLucky12CardsJSON,
         addUserAccount,
         updateUserAccount,
         adjustPoints,

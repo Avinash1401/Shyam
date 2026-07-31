@@ -22,6 +22,7 @@ import { OthersActivityView } from './components/views/OthersActivityView';
 import { ProfileView } from './components/views/ProfileView';
 import { UserGamePortalView } from './components/views/UserGamePortalView';
 import { ResultSettingsView } from './components/views/ResultSettingsView';
+import { AdminLucky12ConfigView } from './components/views/AdminLucky12ConfigView';
 import { SourceCodeExportView } from './components/views/SourceCodeExportView';
 
 // Player Panel Dedicated Views
@@ -112,6 +113,9 @@ const MainContent: React.FC = () => {
 
       case 'result_settings':
         return <ResultSettingsView />;
+
+      case 'admin_lucky12_config':
+        return <AdminLucky12ConfigView />;
 
       case 'source_code_export':
         return <SourceCodeExportView />;

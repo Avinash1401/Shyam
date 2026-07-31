@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export const UserGamePortalView: React.FC = () => {
-  const { users, gameTickets, liveResults, placeBet, adjustPoints, addToast } = useAdmin();
+  const { users, gameTickets, liveResults, placeBet, adjustPoints, addToast, lucky12Cards } = useAdmin();
 
   // Active user account for gaming simulation (defaults to player_suresh or first user)
   const activeUser = users.find((u) => u.username === 'player_suresh') || users[0];
@@ -468,42 +468,124 @@ export const UserGamePortalView: React.FC = () => {
           {/* TAB 3: LUCKY 12 CARD SELECTION */}
           {activeTab === 'lucky12' && (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-5">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="font-bold text-white flex items-center gap-2">
                     <Flame className="w-5 h-5 text-amber-400" />
-                    Lucky 12 Symbols & Cards
+                    <span>Lucky 12 Symbols & Cards</span>
                   </h3>
-                  <p className="text-xs text-slate-400">Select lucky cards for 10x instant multiplier</p>
+                  <p className="text-xs text-slate-400">
+                    Loaded directly from GitHub repository configuration. Pick your lucky cards for 10x payout!
+                  </p>
                 </div>
-                <button
-                  onClick={() => setSelectedCards([])}
-                  className="px-2.5 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300"
-                >
-                  Clear All
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const allNames = lucky12Cards.map((c) => c.name);
+                      setSelectedCards(allNames);
+                    }}
+                    className="px-2.5 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold"
+                  >
+                    Select All 12
+                  </button>
+                  <button
+                    onClick={() => setSelectedCards([])}
+                    className="px-2.5 py-1 text-xs rounded-lg bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-800/40 font-semibold"
+                  >
+                    Clear
+                  </button>
+                </div>
               </div>
 
-              {/* 12 Cards Grid */}
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                {luckyCards.map((card) => {
+              {/* Dynamic Responsive 12 Cards Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5">
+                {lucky12Cards.map((card) => {
                   const isSelected = selectedCards.includes(card.name);
                   return (
-                    <button
+                    <div
                       key={card.id}
-                      onClick={() => toggleLuckyCard(card.name)}
-                      className={`p-4 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-2 ${
+                      className={`p-3.5 rounded-2xl border transition-all duration-300 flex flex-col items-center justify-between gap-3 group hover:-translate-y-1 hover:shadow-xl ${
                         isSelected
-                          ? 'bg-gradient-to-tr from-amber-600 to-orange-600 text-white border-amber-300 shadow-lg shadow-amber-500/20 scale-105'
+                          ? 'bg-gradient-to-b from-slate-900 via-slate-900 to-amber-950/80 border-amber-400/80 shadow-lg shadow-amber-500/20 ring-1 ring-amber-400/50'
                           : 'bg-slate-950/80 hover:bg-slate-800/80 text-slate-300 border-slate-800'
                       }`}
                     >
-                      <span className="text-3xl">{card.icon}</span>
-                      <span className="text-xs font-bold block">{card.name}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900/80 text-amber-300 border border-amber-500/30 font-semibold">
-                        {card.multiplier}
-                      </span>
-                    </button>
+                      {/* Top Badge: Card Number & Multiplier */}
+                      <div className="w-full flex items-center justify-between text-[10px]">
+                        <span className="font-mono font-bold text-slate-400 bg-slate-900 px-2 py-0.5 rounded-md border border-slate-800">
+                          #{card.cardNo.toString().padStart(2, '0')}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-800 font-bold">
+                          {card.multiplier}
+                        </span>
+                      </div>
+
+                      {/* Image Container with GitHub Image & Fallback */}
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-slate-900/90 border border-slate-800 flex items-center justify-center p-1.5 shadow-inner group-hover:scale-105 transition-transform relative overflow-hidden">
+                        {card.imageUrl ? (
+                          <img
+                            src={card.imageUrl}
+                            alt={card.name}
+                            className="w-full h-full object-contain drop-shadow-md"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                              const parent = (e.target as HTMLImageElement).parentElement;
+                              if (parent && !parent.querySelector('.l12-fallback-icon')) {
+                                const fallback = document.createElement('span');
+                                fallback.className = 'l12-fallback-icon text-4xl';
+                                fallback.innerText = card.icon || '👑';
+                                parent.appendChild(fallback);
+                              }
+                            }}
+                          />
+                        ) : (
+                          <span className="text-4xl">{card.icon}</span>
+                        )}
+                      </div>
+
+                      {/* Card Title Name */}
+                      <div className="text-center">
+                        <span className="text-xs font-black text-white block tracking-wide">
+                          {card.icon} {card.name}
+                        </span>
+                      </div>
+
+                      {/* Bet Amount Input per Card */}
+                      <div className="w-full space-y-1.5">
+                        <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl px-2 py-1">
+                          <span className="text-[10px] text-slate-400 font-bold">₹</span>
+                          <input
+                            type="number"
+                            value={betAmount}
+                            onChange={(e) =>
+                              setBetAmount(Math.max(1, parseInt(e.target.value) || 0))
+                            }
+                            className="w-full bg-transparent text-xs font-mono font-bold text-cyan-300 focus:outline-none text-center"
+                            placeholder="Bet"
+                          />
+                        </div>
+
+                        {/* Select Button */}
+                        <button
+                          type="button"
+                          onClick={() => toggleLuckyCard(card.name)}
+                          className={`w-full py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${
+                            isSelected
+                              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-md shadow-amber-500/30'
+                              : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+                          }`}
+                        >
+                          {isSelected ? (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Selected</span>
+                            </>
+                          ) : (
+                            <span>Select Card</span>
+                          )}
+                        </button>
+                      </div>
+                    </div>
                   );
                 })}
               </div>

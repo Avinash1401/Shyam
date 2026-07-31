@@ -29,6 +29,7 @@ import {
   SlidersHorizontal,
   ArrowDownRight,
   Gift,
+  Flame,
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
@@ -242,6 +243,18 @@ export const Sidebar: React.FC = () => {
               >
                 <Gamepad2 className="w-4 h-4 text-emerald-400 animate-pulse" />
                 <span>Player Game Portal</span>
+              </button>
+
+              <button
+                onClick={() => navigateTo('admin_lucky12_config')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all ${
+                  isNavActive('admin_lucky12_config')
+                    ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30 shadow-sm shadow-amber-500/10'
+                    : 'hover:bg-slate-800/60 hover:text-white text-amber-400 font-semibold'
+                }`}
+              >
+                <Flame className="w-4 h-4 text-amber-400" />
+                <span>Lucky 12 GitHub Cards</span>
               </button>
 
               <button
