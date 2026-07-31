@@ -19,10 +19,12 @@ import {
 } from 'lucide-react';
 
 export const UserGamePortalView: React.FC = () => {
-  const { currentUser, users, gameTickets, liveResults, placeBet, adjustPoints, addToast, lucky12Cards } = useAdmin();
+  const { currentUser, playerSession, users, gameTickets, liveResults, placeBet, adjustPoints, addToast, lucky12Cards } = useAdmin();
 
   // Active user account for player session
-  const activeUser = currentUser || users.find((u) => u.username === 'player_suresh') || users[0];
+  const activeUser = (playerSession?.isLoggedIn && playerSession.user)
+    ? playerSession.user
+    : (currentUser || users.find((u) => u.username === 'player_suresh') || users[0]);
 
   const [activeTab, setActiveTab] = useState<'2d' | '3d' | 'lucky12'>('2d');
   const [betAmount, setBetAmount] = useState<number>(100);

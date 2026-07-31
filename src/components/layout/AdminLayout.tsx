@@ -24,12 +24,15 @@ import { AdminLucky12ConfigView } from '../views/AdminLucky12ConfigView';
 import { SourceCodeExportView } from '../views/SourceCodeExportView';
 import { AdminDepositsView } from '../views/AdminDepositsView';
 import { AdminReferralsView } from '../views/AdminReferralsView';
+import { LiveBetsDashboardView } from '../views/LiveBetsDashboardView';
 
 // View Renderer Component for Admin
 export const AdminViewRenderer: React.FC<{ currentPage: string }> = ({ currentPage }) => {
   switch (currentPage) {
     case 'dashboard':
       return <DashboardView />;
+    case 'live_bets_dashboard':
+      return <LiveBetsDashboardView />;
     case 'superdistributer':
       return <ManagementView role="SuperDistributer" />;
     case 'distributer':

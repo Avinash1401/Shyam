@@ -633,6 +633,104 @@ export const DashboardView: React.FC = () => {
         </div>
       </div>
 
+      {/* Live Player Bets Feed Section */}
+      <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Radio className="w-5 h-5 text-cyan-400 animate-pulse" />
+                <span>Live Player Bets Stream</span>
+              </h3>
+              <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800 font-bold uppercase animate-pulse">
+                AUTO-SYNC 3S
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Real-time synchronization of player wagers, wallet balances, and game rounds
+            </p>
+          </div>
+
+          <button
+            onClick={() => setCurrentPage('live_bets_dashboard')}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-bold transition-all"
+          >
+            <span>Open Live Bet Dashboard</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-slate-300">
+            <thead className="bg-slate-950 text-slate-400 font-bold uppercase tracking-wider text-[11px]">
+              <tr>
+                <th className="p-3">Player Name & Mobile</th>
+                <th className="p-3">Username & ID</th>
+                <th className="p-3">Game & Round</th>
+                <th className="p-3">Numbers / Cards</th>
+                <th className="p-3">Bet Amount</th>
+                <th className="p-3">Wallet Balance</th>
+                <th className="p-3">Status</th>
+                <th className="p-3">Bet Time</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/60 font-medium">
+              {gameTickets.slice(0, 5).map((t) => (
+                <tr key={t.id} className="hover:bg-slate-800/40 transition-colors">
+                  <td className="p-3 font-bold text-white">
+                    <div>{t.playerName || t.username}</div>
+                    <div className="text-[10px] font-mono text-emerald-400">{t.mobileNumber || 'N/A'}</div>
+                  </td>
+                  <td className="p-3 font-mono text-cyan-300">
+                    {t.username}
+                  </td>
+                  <td className="p-3 font-mono">
+                    <span className="text-indigo-300 font-bold">{t.gameType}</span>
+                    <div className="text-[10px] text-slate-500">{t.roundId || 'ROUND-9843'}</div>
+                  </td>
+                  <td className="p-3">
+                    <div className="flex gap-1 flex-wrap">
+                      {t.selectedNumbers.slice(0, 3).map((n, i) => (
+                        <span key={i} className="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800 text-cyan-300 font-mono text-[10px] font-bold">
+                          {n}
+                        </span>
+                      ))}
+                      {t.selectedNumbers.length > 3 && (
+                        <span className="text-[10px] text-slate-500">+{t.selectedNumbers.length - 3}</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-3 font-mono font-black text-cyan-400">
+                    ₹{t.betAmount.toLocaleString()}
+                  </td>
+                  <td className="p-3 font-mono font-bold text-emerald-400">
+                    ₹{(t.currentWalletBalance ?? 4500).toLocaleString()}
+                  </td>
+                  <td className="p-3">
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase ${
+                        t.status === 'Won'
+                          ? 'bg-emerald-950 text-emerald-400 border-emerald-800'
+                          : t.status === 'Lost'
+                          ? 'bg-rose-950 text-rose-400 border-rose-800'
+                          : t.status === 'Cancelled'
+                          ? 'bg-slate-950 text-slate-400 border-slate-800'
+                          : 'bg-amber-950 text-amber-400 border-amber-800 animate-pulse'
+                      }`}
+                    >
+                      {t.status}
+                    </span>
+                  </td>
+                  <td className="p-3 font-mono text-[11px] text-slate-400">
+                    {t.createdAt.substring(11, 19)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* GAME SETTINGS MODAL */}
       {editingGame && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">

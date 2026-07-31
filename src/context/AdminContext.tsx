@@ -552,12 +552,50 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   });
 
   const [onlinePlayers, setOnlinePlayers] = useState<OnlinePlayer[]>(initialOnlinePlayers);
-  const [gameTickets, setGameTickets] = useState<GameTicket[]>(initialGameTickets);
+  const [gameTickets, setGameTickets] = useState<GameTicket[]>(() => {
+    const saved = localStorage.getItem('shyam_game_tickets');
+    return saved ? JSON.parse(saved) : initialGameTickets;
+  });
   const [winPercentages, setWinPercentages] = useState<WinPercentageConfig[]>(initialWinPercentages);
-  const [liveResults, setLiveResults] = useState<LiveResultDraw[]>(initialLiveResults);
-  const [transactions, setTransactions] = useState<TransactionRecord[]>(initialTransactions);
+  const [liveResults, setLiveResults] = useState<LiveResultDraw[]>(() => {
+    const saved = localStorage.getItem('shyam_live_results');
+    return saved ? JSON.parse(saved) : initialLiveResults;
+  });
+  const [transactions, setTransactions] = useState<TransactionRecord[]>(() => {
+    const saved = localStorage.getItem('shyam_transactions');
+    return saved ? JSON.parse(saved) : initialTransactions;
+  });
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(initialActivityLogs);
   const [gameControls, setGameControls] = useState<GameControlConfig[]>(initialGameControls);
+
+  // Sync core data collections to localStorage
+  useEffect(() => {
+    localStorage.setItem('shyam_users', JSON.stringify(users));
+  }, [users]);
+
+  useEffect(() => {
+    localStorage.setItem('shyam_super_distributers', JSON.stringify(superDistributers));
+  }, [superDistributers]);
+
+  useEffect(() => {
+    localStorage.setItem('shyam_distributers', JSON.stringify(distributers));
+  }, [distributers]);
+
+  useEffect(() => {
+    localStorage.setItem('shyam_retailers', JSON.stringify(retailers));
+  }, [retailers]);
+
+  useEffect(() => {
+    localStorage.setItem('shyam_game_tickets', JSON.stringify(gameTickets));
+  }, [gameTickets]);
+
+  useEffect(() => {
+    localStorage.setItem('shyam_transactions', JSON.stringify(transactions));
+  }, [transactions]);
+
+  useEffect(() => {
+    localStorage.setItem('shyam_live_results', JSON.stringify(liveResults));
+  }, [liveResults]);
 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [silenceBettingNotifications, setSilenceBettingNotifications] = useState<boolean>(true);
@@ -1041,9 +1079,36 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
           if (isWinner) {
             const winVal = ticket.betAmount * multiplier;
-            // Credit winner user wallet
+            // Credit winner user wallet and create win payout transaction
             setUsers((prevUsers) =>
-              prevUsers.map((u) => (u.username === ticket.username ? { ...u, points: u.points + winVal } : u))
+              prevUsers.map((u) => {
+                if (u.username === ticket.username) {
+                  const updatedPoints = u.points + winVal;
+
+                  const winTxn: TransactionRecord = {
+                    id: `TXN-WIN-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
+                    refId: `REF-WIN-${Math.floor(100000 + Math.random() * 900000)}`,
+                    fromUser: 'System Payout Engine',
+                    toUser: ticket.username,
+                    type: 'Credit',
+                    amount: winVal,
+                    balanceAfter: updatedPoints,
+                    remark: `Win Payout on ${gameType} (Ticket #${ticket.ticketNo}, Result: ${result})`,
+                    timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                  };
+                  setTransactions((prevTx) => [winTxn, ...prevTx]);
+
+                  if (playerSession.user && playerSession.user.username === ticket.username) {
+                    setPlayerSession({ isLoggedIn: true, user: { ...playerSession.user, points: updatedPoints } });
+                  }
+                  if (currentUser && currentUser.username === ticket.username) {
+                    setCurrentUser({ ...currentUser, points: updatedPoints });
+                  }
+
+                  return { ...u, points: updatedPoints };
+                }
+                return u;
+              })
             );
             return { ...ticket, status: 'Won', winAmount: winVal };
           } else {
@@ -1223,8 +1288,21 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return false;
     }
 
-    // Find real user
-    const user = users.find((u) => u.username === username) || users[0];
+    // Find real user (check users array, playerSession, currentUser)
+    let user = users.find(
+      (u) =>
+        u.username.toLowerCase() === username.toLowerCase() ||
+        (u.phone && u.phone.includes(username)) ||
+        u.id === username
+    );
+
+    if (!user && playerSession.isLoggedIn && playerSession.user) {
+      user = playerSession.user;
+    }
+    if (!user && currentUser) {
+      user = currentUser;
+    }
+
     if (!user) {
       addToast('User Error', 'Active registered user account not found.', 'error');
       return false;
@@ -1240,40 +1318,66 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return false;
     }
 
-    // Deduct points
-    setUsers((prev) =>
-      prev.map((u) => (u.username === user.username ? { ...u, points: u.points - amount } : u))
-    );
+    const balanceAfter = user.points - amount;
 
-    // Create ticket
+    // Deduct points from user list
+    setUsers((prev) => {
+      const exists = prev.some((u) => u.username === user!.username);
+      if (exists) {
+        return prev.map((u) => (u.username === user!.username ? { ...u, points: balanceAfter } : u));
+      } else {
+        return [{ ...user!, points: balanceAfter }, ...prev];
+      }
+    });
+
+    // Sync player session if matching
+    if (playerSession.user && playerSession.user.username === user.username) {
+      const updatedPlayer = { ...playerSession.user, points: balanceAfter };
+      setPlayerSession({ isLoggedIn: true, user: updatedPlayer });
+    }
+    if (currentUser && currentUser.username === user.username) {
+      setCurrentUser({ ...currentUser, points: balanceAfter });
+    }
+
+    // Create unique IDs
+    const roundId = gc?.currentRoundNo || `ROUND-${Math.floor(1000 + Math.random() * 9000)}`;
     const ticketNo = `SHM-${Date.now().toString().slice(-6)}`;
+    const txnId = `TXN-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    // Create ticket with all metadata
     const newTicket: GameTicket = {
-      id: `tkt-${Date.now()}`,
+      id: `tkt-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
       ticketNo,
+      userId: user.id || user.username,
       username: user.username,
+      playerName: user.name || user.username,
+      mobileNumber: user.phone || 'N/A',
       role: user.role,
-      parentName: user.parentName || 'ret_luck1',
+      parentName: user.parentName || 'Direct Player',
       gameType,
       selectedNumbers,
       betAmount: amount,
       winAmount: 0,
       status: 'Pending',
+      roundId,
       drawTime: gc ? `${gc.secondsRemaining}s` : 'In 2 mins',
       createdAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      currentWalletBalance: balanceAfter,
+      transactionId: txnId,
     };
 
     setGameTickets((prev) => [newTicket, ...prev]);
 
-    // Transaction
+    // Create Transaction
     const newTxn: TransactionRecord = {
-      id: `txn-${Date.now()}`,
+      id: txnId,
       refId: `REF-${Math.floor(100000 + Math.random() * 900000)}`,
       fromUser: user.username,
       toUser: 'System Wallet',
       type: 'Debit',
       amount,
-      balanceAfter: user.points - amount,
-      remark: `Bet placed on ${gameType} (Ticket #${ticketNo})`,
+      balanceAfter,
+      remark: `Bet placed on ${gameType} (Round: ${roundId}, Ticket: #${ticketNo})`,
       timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
     };
     setTransactions((prev) => [newTxn, ...prev]);

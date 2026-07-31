@@ -234,6 +234,23 @@ export const Sidebar: React.FC = () => {
             </div>
             <div className="space-y-1">
               <button
+                onClick={() => navigateTo('live_bets_dashboard')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                  isNavActive('live_bets_dashboard')
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-md shadow-cyan-500/20'
+                    : 'hover:bg-slate-800/60 hover:text-white text-cyan-400'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Radio className="w-4 h-4 text-cyan-400 animate-pulse" />
+                  <span>Live Bets Dashboard</span>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 animate-pulse font-extrabold">
+                  LIVE
+                </span>
+              </button>
+
+              <button
                 onClick={() => navigateTo('user_game_portal')}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all ${
                   isNavActive('user_game_portal')

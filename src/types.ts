@@ -71,7 +71,10 @@ export interface OnlinePlayer {
 export interface GameTicket {
   id: string;
   ticketNo: string;
+  userId?: string;
   username: string;
+  playerName?: string;
+  mobileNumber?: string;
   role: UserRole;
   parentName: string;
   gameType: '2D Lottery' | '3D Lottery' | 'Lucky 12' | '12 Card';
@@ -79,8 +82,11 @@ export interface GameTicket {
   betAmount: number;
   winAmount: number;
   status: 'Won' | 'Lost' | 'Pending' | 'Cancelled';
+  roundId?: string;
   drawTime: string;
   createdAt: string;
+  currentWalletBalance?: number;
+  transactionId?: string;
 }
 
 export interface GameControlConfig {
@@ -222,6 +228,7 @@ export type NavigationPage =
   | 'declare_3d'
   | 'declare_lucky12'
   | 'user_game_portal'
+  | 'live_bets_dashboard'
   | 'result_settings'
   | 'source_code_export'
   | 'profile'
