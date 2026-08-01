@@ -29,12 +29,7 @@ export const PlayerLoginPage: React.FC = () => {
     setErrorMsg('');
 
     if (!email.trim() || !password) {
-      setErrorMsg('Please enter your Email Address and Password.');
-      return;
-    }
-
-    if (!email.includes('@')) {
-      setErrorMsg('Invalid Email Address');
+      setErrorMsg('Please enter your Email Address or Username and Password.');
       return;
     }
 

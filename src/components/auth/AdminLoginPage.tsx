@@ -28,12 +28,7 @@ export const AdminLoginPage: React.FC = () => {
     setErrorMsg('');
 
     if (!email.trim() || !password || !pin) {
-      setErrorMsg('Please enter Admin Email, Password, and Security PIN.');
-      return;
-    }
-
-    if (!email.includes('@')) {
-      setErrorMsg('Invalid Email Address');
+      setErrorMsg('Please enter Admin Email or Username, Password, and Security PIN.');
       return;
     }
 
