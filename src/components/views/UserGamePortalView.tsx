@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
+import { GameCardSkeleton, GamePortalSkeleton } from '../common/Skeleton';
 import { soundManager } from '../../utils/sound';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -38,6 +39,8 @@ export const UserGamePortalView: React.FC = () => {
     addToast,
     lucky12Cards,
     setCurrentPage,
+    isLoadingData,
+    refreshData,
   } = useAdmin();
 
   // Active user account for player session
@@ -211,6 +214,10 @@ export const UserGamePortalView: React.FC = () => {
     if (active2DRange === '80-99') return parseInt(num, 10) >= 80 && parseInt(num, 10) <= 99;
     return true;
   });
+
+  if (isLoadingData) {
+    return <GamePortalSkeleton />;
+  }
 
   return (
     <div className="space-y-6 pb-12">

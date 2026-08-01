@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
+import { DashboardSkeleton } from '../common/Skeleton';
 import {
   UserCheck,
   UserPlus,
@@ -84,6 +85,8 @@ export const DashboardView: React.FC = () => {
     verifyAdminPin,
     addToast,
     transactions,
+    isLoadingData,
+    refreshData,
   } = useAdmin();
 
   // Settings Modal State
@@ -161,6 +164,10 @@ export const DashboardView: React.FC = () => {
     setDeclareModalOpen(false);
   };
 
+  if (isLoadingData) {
+    return <DashboardSkeleton />;
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Top Banner Header with Real-Time Stream Status */}
@@ -190,6 +197,15 @@ export const DashboardView: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => refreshData()}
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 text-xs font-bold border border-slate-700/80 transition-all hover:text-white"
+              title="Refresh Dashboard Data"
+            >
+              <RefreshCw className="w-4 h-4 text-cyan-400" />
+              <span>Refresh</span>
+            </button>
+
             <button
               onClick={() => handleOpenDeclareModal('2D Lottery')}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02]"

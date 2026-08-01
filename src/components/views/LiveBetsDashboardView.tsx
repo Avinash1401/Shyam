@@ -23,9 +23,10 @@ import {
   Eye,
 } from 'lucide-react';
 import { GameTicket } from '../../types';
+import { TableSkeleton, StatCardSkeleton } from '../common/Skeleton';
 
 export const LiveBetsDashboardView: React.FC = () => {
-  const { gameTickets, users, cancelTicket, declareWinningResult, addToast } = useAdmin();
+  const { gameTickets, users, cancelTicket, declareWinningResult, addToast, isLoadingData } = useAdmin();
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -150,6 +151,20 @@ export const LiveBetsDashboardView: React.FC = () => {
     setCustomDate('');
     setRoundFilter('');
   };
+
+  if (isLoadingData) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+        </div>
+        <TableSkeleton rows={8} cols={6} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">

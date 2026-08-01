@@ -123,6 +123,10 @@ interface AdminContextType {
   markAllNotificationsAsRead: () => void;
   clearNotificationHistory: () => void;
 
+  // Loading & Sync state
+  isLoadingData: boolean;
+  refreshData: () => Promise<void>;
+
   // Real-Time Metrics
   liveBetIn: number;
   liveBetOut: number;
@@ -265,6 +269,20 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [silenceBettingNotifications, setSilenceBettingNotifications] = useState<boolean>(true);
+  const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoadingData(false);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const refreshData = async () => {
+    setIsLoadingData(true);
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    setIsLoadingData(false);
+  };
 
   // ---------------------------------------------------------------------------
   // FIRESTORE REALTIME SUBSCRIPTIONS SETUP
@@ -1055,6 +1073,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         markNotificationAsRead,
         markAllNotificationsAsRead,
         clearNotificationHistory,
+        isLoadingData,
+        refreshData,
         liveBetIn,
         liveBetOut,
         todayProfitLoss,
