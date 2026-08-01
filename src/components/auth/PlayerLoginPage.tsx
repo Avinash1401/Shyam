@@ -5,7 +5,7 @@ import { Gamepad2, Lock, User, Eye, EyeOff, ArrowRight, Gift } from 'lucide-reac
 
 export const PlayerLoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { loginAsPlayer, playerSession } = useAdmin();
+  const { loginAsPlayer, isLoggedIn, userRole, isAuthLoading } = useAdmin();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -13,33 +13,44 @@ export const PlayerLoginPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // If already logged in as player, navigate to /player/dashboard
+  // If already logged in as player or admin, navigate to correct dashboard
   React.useEffect(() => {
-    if (playerSession?.isLoggedIn) {
-      navigate('/player/dashboard', { replace: true });
+    if (!isAuthLoading && isLoggedIn) {
+      if (userRole === 'player') {
+        navigate('/player/dashboard', { replace: true });
+      } else if (userRole === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
+      }
     }
-  }, [playerSession, navigate]);
+  }, [isLoggedIn, userRole, isAuthLoading, navigate]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!username.trim()) {
-      setErrorMsg('Please enter your Mobile Number or Username.');
+    if (!username.trim() || !password) {
+      setErrorMsg('Please enter your Mobile Number or Username and Password.');
       return;
     }
 
     setLoading(true);
-    setTimeout(() => {
-      const res = loginAsPlayer(username.trim(), password);
+    try {
+      const res = await loginAsPlayer(username.trim(), password);
       setLoading(false);
 
       if (res.success) {
-        navigate('/player/dashboard', { replace: true });
+        if (res.role === 'admin') {
+          navigate('/admin/dashboard', { replace: true });
+        } else {
+          navigate('/player/dashboard', { replace: true });
+        }
       } else {
         setErrorMsg(res.message || 'Invalid player credentials.');
       }
-    }, 400);
+    } catch (err: any) {
+      setLoading(false);
+      setErrorMsg(err.message || 'Login failed.');
+    }
   };
 
   return (

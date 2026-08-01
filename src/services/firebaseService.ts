@@ -177,6 +177,73 @@ export async function initializeFirestoreDatabase() {
 // FIREBASE AUTHENTICATION SERVICES
 // -----------------------------------------------------------------------------
 
+export function normalizeRole(rawRole?: string): 'admin' | 'player' {
+  if (!rawRole) return 'player';
+  const norm = rawRole.toString().trim().toLowerCase();
+  if (
+    norm === 'admin' ||
+    norm === 'superadmin' ||
+    norm === 'superdistributer' ||
+    norm === 'distributer' ||
+    norm === 'retailer'
+  ) {
+    return 'admin';
+  }
+  return 'player';
+}
+
+export async function getFirestoreUserByAuthUser(firebaseUser: FirebaseUser): Promise<{ user: UserAccount; role: 'admin' | 'player' } | null> {
+  if (!firebaseUser) return null;
+
+  try {
+    let userSnap = await getDoc(doc(db, 'users', firebaseUser.uid));
+    let userObj: UserAccount | null = null;
+
+    if (userSnap.exists()) {
+      userObj = userSnap.data() as UserAccount;
+    } else if (firebaseUser.email) {
+      const qEmail = query(collection(db, 'users'), where('email', '==', firebaseUser.email.toLowerCase()));
+      const snapEmail = await getDocs(qEmail);
+      if (!snapEmail.empty) {
+        userObj = snapEmail.docs[0].data() as UserAccount;
+      } else {
+        const usernamePart = firebaseUser.email.split('@')[0].toLowerCase();
+        const userDoc = await getDoc(doc(db, 'users', usernamePart));
+        if (userDoc.exists()) {
+          userObj = userDoc.data() as UserAccount;
+        }
+      }
+    }
+
+    if (!userObj && (firebaseUser.email?.includes('admin') || firebaseUser.email?.includes('shyampanel.com'))) {
+      userObj = defaultMasterAdmin;
+    }
+
+    if (userObj) {
+      if (userObj.username) {
+        const freshSnap = await getDoc(doc(db, 'users', userObj.username.toLowerCase()));
+        if (freshSnap.exists()) {
+          userObj = freshSnap.data() as UserAccount;
+        }
+      }
+      const role = normalizeRole(userObj.role);
+      return { user: userObj, role };
+    }
+  } catch (err) {
+    console.error('Error fetching Firestore user by auth user:', err);
+  }
+
+  return null;
+}
+
+export async function logoutFirestoreUser() {
+  try {
+    await signOut(auth);
+  } catch (err) {
+    console.error('Error signing out from Firebase Auth:', err);
+  }
+}
+
 // Admin Login Handler
 export async function loginFirestoreAdmin(usernameInput: string, passwordInput: string, pinInput?: string) {
   const normUser = usernameInput.trim().toLowerCase();
@@ -214,7 +281,12 @@ export async function loginFirestoreAdmin(usernameInput: string, passwordInput: 
 
   try {
     const userCred = await signInWithEmailAndPassword(auth, emailToAuth, passwordInput);
-    return { success: true, user: userObj, firebaseUser: userCred.user };
+    // Immediately fetch user document from Firestore after Auth succeeds
+    const freshDoc = await getDoc(doc(db, 'users', userObj.username || normUser));
+    const finalUser = freshDoc.exists() ? (freshDoc.data() as UserAccount) : userObj;
+    const role = normalizeRole(finalUser.role);
+
+    return { success: true, user: finalUser, role, firebaseUser: userCred.user };
   } catch (authError: any) {
     // Auto-bootstrap master admin in Firebase Auth if needed
     if (
@@ -224,10 +296,10 @@ export async function loginFirestoreAdmin(usernameInput: string, passwordInput: 
       try {
         const newCred = await createUserWithEmailAndPassword(auth, emailToAuth, passwordInput);
         await setDoc(doc(db, 'users', 'admin'), defaultMasterAdmin, { merge: true });
-        return { success: true, user: defaultMasterAdmin, firebaseUser: newCred.user };
+        return { success: true, user: defaultMasterAdmin, role: 'admin' as const, firebaseUser: newCred.user };
       } catch (createErr: any) {
         if (createErr.code === 'auth/email-already-in-use') {
-          return { success: true, user: defaultMasterAdmin };
+          return { success: true, user: defaultMasterAdmin, role: 'admin' as const };
         }
       }
     }
@@ -235,9 +307,11 @@ export async function loginFirestoreAdmin(usernameInput: string, passwordInput: 
     if (userObj.password && userObj.password === passwordInput) {
       try {
         const newCred = await createUserWithEmailAndPassword(auth, emailToAuth, passwordInput);
-        return { success: true, user: userObj, firebaseUser: newCred.user };
+        const role = normalizeRole(userObj.role);
+        return { success: true, user: userObj, role, firebaseUser: newCred.user };
       } catch (e) {
-        return { success: true, user: userObj };
+        const role = normalizeRole(userObj.role);
+        return { success: true, user: userObj, role };
       }
     }
 
@@ -277,13 +351,19 @@ export async function loginFirestorePlayer(usernameInput: string, passwordInput:
       lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
     }).catch(() => {});
 
-    return { success: true, user: userObj, firebaseUser: userCred.user };
+    // Immediately fetch user document from Firestore after Auth succeeds
+    const freshDoc = await getDoc(doc(db, 'users', userObj.username));
+    const finalUser = freshDoc.exists() ? (freshDoc.data() as UserAccount) : userObj;
+    const role = normalizeRole(finalUser.role);
+
+    return { success: true, user: finalUser, role, firebaseUser: userCred.user };
   } catch (authError: any) {
     if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential') {
       if (userObj.password && userObj.password === passwordInput) {
         try {
           const newCred = await createUserWithEmailAndPassword(auth, userEmail, passwordInput);
-          return { success: true, user: userObj, firebaseUser: newCred.user };
+          const role = normalizeRole(userObj.role);
+          return { success: true, user: userObj, role, firebaseUser: newCred.user };
         } catch (createErr: any) {
           if (createErr.code === 'auth/email-already-in-use') {
             return { success: false, message: 'Invalid password. Please check your credentials.' };

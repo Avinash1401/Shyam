@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AdminProvider } from './context/AdminContext';
+import { AdminProvider, useAdmin } from './context/AdminContext';
 
 // Authentication Pages
 import { PlayerLoginPage } from './components/auth/PlayerLoginPage';
@@ -11,6 +11,27 @@ import { AdminLoginPage } from './components/auth/AdminLoginPage';
 import { AdminLayout } from './components/layout/AdminLayout';
 import { PlayerLayout } from './components/layout/PlayerLayout';
 
+function RoleBasedRootRedirect() {
+  const { isLoggedIn, userRole, isAuthLoading } = useAdmin();
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
+        <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (isLoggedIn) {
+    if (userRole === 'admin') {
+      return <Navigate to="/admin/dashboard" replace />;
+    }
+    return <Navigate to="/player/dashboard" replace />;
+  }
+
+  return <Navigate to="/player/login" replace />;
+}
+
 export default function App() {
   useEffect(() => {
     document.title = 'Shyam111';
@@ -20,8 +41,8 @@ export default function App() {
     <BrowserRouter>
       <AdminProvider>
         <Routes>
-          {/* Default root redirects to Player portal */}
-          <Route path="/" element={<Navigate to="/player/dashboard" replace />} />
+          {/* Default root redirects based on role */}
+          <Route path="/" element={<RoleBasedRootRedirect />} />
 
           {/* Player Dedicated Routes */}
           <Route path="/player/login" element={<PlayerLoginPage />} />
@@ -35,7 +56,7 @@ export default function App() {
           <Route path="/admin/*" element={<AdminLayout />} />
 
           {/* Catch-all route */}
-          <Route path="*" element={<Navigate to="/player/dashboard" replace />} />
+          <Route path="*" element={<RoleBasedRootRedirect />} />
         </Routes>
       </AdminProvider>
     </BrowserRouter>

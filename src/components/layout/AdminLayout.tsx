@@ -100,10 +100,24 @@ export const AdminViewRenderer: React.FC<{ currentPage: string }> = ({ currentPa
 };
 
 export const AdminLayout: React.FC = () => {
-  const { adminSession, currentPage, mustChangeAdminPassword } = useAdmin();
+  const { isLoggedIn, userRole, isAuthLoading, currentPage, mustChangeAdminPassword } = useAdmin();
 
-  // If admin session is not active, redirect strictly to /admin/login
-  if (!adminSession?.isLoggedIn) {
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
+        <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+        <p className="mt-4 text-xs font-mono text-cyan-400">Authenticating Admin Access...</p>
+      </div>
+    );
+  }
+
+  // Requirement: If a player opens /admin, redirect to /player/login
+  if (userRole === 'player') {
+    return <Navigate to="/player/login" replace />;
+  }
+
+  // Requirement: Protect every route using role-based authentication
+  if (!isLoggedIn || userRole !== 'admin') {
     return <Navigate to="/admin/login" replace />;
   }
 

@@ -5,7 +5,7 @@ import { Shield, Key, Lock, User, Eye, EyeOff, ArrowRight, ShieldAlert, Sparkles
 
 export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { loginAsAdmin, adminSession } = useAdmin();
+  const { loginAsAdmin, isLoggedIn, userRole, isAuthLoading } = useAdmin();
 
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('Admin@123');
@@ -16,12 +16,14 @@ export const AdminLoginPage: React.FC = () => {
 
   // If already logged in as Admin, navigate to /admin/dashboard
   React.useEffect(() => {
-    if (adminSession?.isLoggedIn) {
-      navigate('/admin/dashboard', { replace: true });
+    if (!isAuthLoading && isLoggedIn) {
+      if (userRole === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
+      }
     }
-  }, [adminSession, navigate]);
+  }, [isLoggedIn, userRole, isAuthLoading, navigate]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
@@ -31,16 +33,23 @@ export const AdminLoginPage: React.FC = () => {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      const res = loginAsAdmin(username.trim(), password, pin.trim());
+    try {
+      const res = await loginAsAdmin(username.trim(), password, pin.trim());
       setLoading(false);
 
       if (res.success) {
-        navigate('/admin/dashboard', { replace: true });
+        if (res.role === 'admin') {
+          navigate('/admin/dashboard', { replace: true });
+        } else {
+          navigate('/player/dashboard', { replace: true });
+        }
       } else {
         setErrorMsg(res.message || 'Invalid admin credentials or authorization failed.');
       }
-    }, 400);
+    } catch (err: any) {
+      setLoading(false);
+      setErrorMsg(err.message || 'Login failed.');
+    }
   };
 
   return (

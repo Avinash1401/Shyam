@@ -46,10 +46,24 @@ export const PlayerViewRenderer: React.FC<{ currentPage: string }> = ({ currentP
 };
 
 export const PlayerLayout: React.FC = () => {
-  const { playerSession, currentPage } = useAdmin();
+  const { isLoggedIn, userRole, isAuthLoading, currentPage } = useAdmin();
 
-  // If player session is not active, redirect strictly to /player/login
-  if (!playerSession?.isLoggedIn) {
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
+        <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+        <p className="mt-4 text-xs font-mono text-amber-400">Authenticating Player Access...</p>
+      </div>
+    );
+  }
+
+  // Requirement: If an admin opens /player, redirect to /admin/dashboard
+  if (userRole === 'admin') {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  // Requirement: Protect every route using role-based authentication
+  if (!isLoggedIn || userRole !== 'player') {
     return <Navigate to="/player/login" replace />;
   }
 

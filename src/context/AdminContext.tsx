@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../lib/firebase';
 import {
   UserAccount,
   OnlinePlayer,
@@ -42,7 +44,8 @@ import {
   loginFirestoreAdmin,
   loginFirestorePlayer,
   registerFirestorePlayer,
-  signOutFirebaseUser,
+  getFirestoreUserByAuthUser,
+  logoutFirestoreUser,
   defaultGameControls,
   defaultWinPercentages,
   defaultLucky12Cards,
@@ -62,14 +65,16 @@ interface AdminContextType {
   adminSession: { isLoggedIn: boolean; user: UserAccount | null };
   playerSession: { isLoggedIn: boolean; user: UserAccount | null };
   isLoggedIn: boolean;
+  userRole: 'admin' | 'player' | null;
+  isAuthLoading: boolean;
   currentUser: UserAccount | null;
   activeRole: 'Admin' | 'Player';
   adminPassword?: string;
   mustChangeAdminPassword?: boolean;
   changeAdminPassword: (newPassword: string) => { success: boolean; message?: string };
   login: (username: string, password?: string) => Promise<boolean>;
-  loginAsPlayer: (username: string, password?: string) => Promise<{ success: boolean; message?: string }>;
-  loginAsAdmin: (username: string, password?: string, pin?: string) => Promise<{ success: boolean; message?: string }>;
+  loginAsPlayer: (username: string, password?: string) => Promise<{ success: boolean; message?: string; role?: 'admin' | 'player' }>;
+  loginAsAdmin: (username: string, password?: string, pin?: string) => Promise<{ success: boolean; message?: string; role?: 'admin' | 'player' }>;
   register: (name: string, username: string, password: string, email: string, phone: string, refCode?: string) => Promise<{ success: boolean; message: string }>;
   forgotPasswordOTP: (emailOrPhone: string) => { success: boolean; otp?: string; message: string };
   verifyOTPAndReset: (emailOrPhone: string, otp: string, newPassword: string) => boolean;
@@ -187,8 +192,53 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   });
 
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [userRole, setUserRole] = useState<'admin' | 'player' | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
   const [activeRole, setActiveRole] = useState<'Admin' | 'Player'>('Admin');
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
+
+  // ---------------------------------------------------------------------------
+  // AUTH STATE LISTENER (Firebase Auth -> Fetch Firestore Doc -> Set Role)
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    const unsubAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Immediately fetch user document from Firestore
+        const result = await getFirestoreUserByAuthUser(firebaseUser);
+        if (result) {
+          const role = result.role;
+          setUserRole(role);
+          setCurrentUser(result.user);
+          setIsLoggedIn(true);
+
+          if (role === 'admin') {
+            setAdminSession({ isLoggedIn: true, user: result.user });
+            setPlayerSession({ isLoggedIn: false, user: null });
+            setActiveRole('Admin');
+          } else {
+            setPlayerSession({ isLoggedIn: true, user: result.user });
+            setAdminSession({ isLoggedIn: false, user: null });
+            setActiveRole('Player');
+          }
+        } else {
+          setUserRole(null);
+          setCurrentUser(null);
+          setIsLoggedIn(false);
+          setAdminSession({ isLoggedIn: false, user: null });
+          setPlayerSession({ isLoggedIn: false, user: null });
+        }
+      } else {
+        setUserRole(null);
+        setCurrentUser(null);
+        setIsLoggedIn(false);
+        setAdminSession({ isLoggedIn: false, user: null });
+        setPlayerSession({ isLoggedIn: false, user: null });
+      }
+      setIsAuthLoading(false);
+    });
+
+    return () => unsubAuth();
+  }, []);
 
   // ---------------------------------------------------------------------------
   // REALTIME FIRESTORE COLLECTIONS STATE (10 COLLECTIONS)
@@ -669,42 +719,64 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return res.success;
   };
 
-  const loginAsPlayer = async (usernameInput: string, passwordInput?: string): Promise<{ success: boolean; message?: string }> => {
+  const loginAsPlayer = async (usernameInput: string, passwordInput?: string): Promise<{ success: boolean; message?: string; role?: 'admin' | 'player' }> => {
     if (!usernameInput || !passwordInput) {
       return { success: false, message: 'Please enter Username and Password.' };
     }
 
     const res = await loginFirestorePlayer(usernameInput, passwordInput);
-    if (res.success && res.user) {
-      const sess = { isLoggedIn: true, user: res.user };
-      setPlayerSession(sess);
-      setIsLoggedIn(true);
+    if (res.success && res.user && res.role) {
+      const role = res.role;
+      setUserRole(role);
       setCurrentUser(res.user);
-      setActiveRole('Player');
-      setCurrentPage('user_game_portal');
-      addToast('Player Authenticated', `Welcome back, ${res.user.name || res.user.username}!`, 'success');
-      return { success: true };
+      setIsLoggedIn(true);
+
+      if (role === 'admin') {
+        setAdminSession({ isLoggedIn: true, user: res.user });
+        setPlayerSession({ isLoggedIn: false, user: null });
+        setActiveRole('Admin');
+        setCurrentPage('dashboard');
+        addToast('Admin Authenticated', `Welcome back, ${res.user.name || res.user.username}!`, 'success');
+      } else {
+        setPlayerSession({ isLoggedIn: true, user: res.user });
+        setAdminSession({ isLoggedIn: false, user: null });
+        setActiveRole('Player');
+        setCurrentPage('user_game_portal');
+        addToast('Player Authenticated', `Welcome back, ${res.user.name || res.user.username}!`, 'success');
+      }
+      return { success: true, role };
     } else {
       addToast('Player Login Failed', res.message || 'Invalid player credentials.', 'error');
       return { success: false, message: res.message || 'Invalid player credentials.' };
     }
   };
 
-  const loginAsAdmin = async (usernameInput: string, passwordInput?: string, pinInput?: string): Promise<{ success: boolean; message?: string }> => {
+  const loginAsAdmin = async (usernameInput: string, passwordInput?: string, pinInput?: string): Promise<{ success: boolean; message?: string; role?: 'admin' | 'player' }> => {
     if (!usernameInput || !passwordInput) {
       return { success: false, message: 'Please enter Admin username and password.' };
     }
 
     const res = await loginFirestoreAdmin(usernameInput, passwordInput, pinInput);
-    if (res.success && res.user) {
-      const sess = { isLoggedIn: true, user: res.user };
-      setAdminSession(sess);
-      setIsLoggedIn(true);
+    if (res.success && res.user && res.role) {
+      const role = res.role;
+      setUserRole(role);
       setCurrentUser(res.user);
-      setActiveRole('Admin');
-      setCurrentPage('dashboard');
-      addToast('Admin Authenticated', `Welcome back, ${res.user.name}!`, 'success');
-      return { success: true };
+      setIsLoggedIn(true);
+
+      if (role === 'admin') {
+        setAdminSession({ isLoggedIn: true, user: res.user });
+        setPlayerSession({ isLoggedIn: false, user: null });
+        setActiveRole('Admin');
+        setCurrentPage('dashboard');
+        addToast('Admin Authenticated', `Welcome back, ${res.user.name || res.user.username}!`, 'success');
+      } else {
+        setPlayerSession({ isLoggedIn: true, user: res.user });
+        setAdminSession({ isLoggedIn: false, user: null });
+        setActiveRole('Player');
+        setCurrentPage('user_game_portal');
+        addToast('Player Authenticated', `Welcome back, ${res.user.name || res.user.username}!`, 'success');
+      }
+      return { success: true, role };
     } else {
       addToast('Admin Login Failed', res.message || 'Access Denied.', 'error');
       return { success: false, message: res.message || 'Access Denied.' };
@@ -776,31 +848,28 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  const logoutAdmin = () => {
-    signOutFirebaseUser().catch(() => {});
+  const logoutAdmin = async () => {
+    await logoutFirestoreUser();
+    setUserRole(null);
     setAdminSession({ isLoggedIn: false, user: null });
-    if (activeRole === 'Admin') {
-      setIsLoggedIn(false);
-      setCurrentUser(null);
-    }
-    addToast('Admin Logged Out', 'You have been logged out of the Admin portal.', 'info');
-  };
-
-  const logoutPlayer = () => {
-    signOutFirebaseUser().catch(() => {});
     setPlayerSession({ isLoggedIn: false, user: null });
-    if (activeRole === 'Player') {
-      setIsLoggedIn(false);
-      setCurrentUser(null);
-    }
-    addToast('Player Logged Out', 'You have logged out of Shyam Game.', 'info');
-  };
-
-  const logout = () => {
-    logoutAdmin();
-    logoutPlayer();
     setIsLoggedIn(false);
     setCurrentUser(null);
+    addToast('Logged Out', 'You have been logged out of the Admin portal.', 'info');
+  };
+
+  const logoutPlayer = async () => {
+    await logoutFirestoreUser();
+    setUserRole(null);
+    setAdminSession({ isLoggedIn: false, user: null });
+    setPlayerSession({ isLoggedIn: false, user: null });
+    setIsLoggedIn(false);
+    setCurrentUser(null);
+    addToast('Logged Out', 'You have logged out of Shyam Game.', 'info');
+  };
+
+  const logout = async () => {
+    await logoutAdmin();
   };
 
   // Deposit & Withdrawal Requests
@@ -934,6 +1003,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         adminSession,
         playerSession,
         isLoggedIn,
+        userRole,
+        isAuthLoading,
         currentUser,
         activeRole,
         adminPassword,
