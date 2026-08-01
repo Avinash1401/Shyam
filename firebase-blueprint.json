@@ -1,0 +1,173 @@
+{
+  "entities": {
+    "users": {
+      "title": "users",
+      "description": "User accounts and profiles",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "role": { "type": "string" },
+        "parentName": { "type": "string" },
+        "points": { "type": "number" },
+        "status": { "type": "string" },
+        "creditLimit": { "type": "number" },
+        "commissionRate": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["username", "name", "role"]
+    },
+    "bets": {
+      "title": "bets",
+      "description": "Bet tickets placed by users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ticketNo": { "type": "string" },
+        "username": { "type": "string" },
+        "gameType": { "type": "string" },
+        "selectedNumbers": { "type": "array", "items": { "type": "string" } },
+        "betAmount": { "type": "number" },
+        "drawTime": { "type": "string" },
+        "status": { "type": "string" },
+        "winAmount": { "type": "number" },
+        "timestamp": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["ticketNo", "username", "gameType", "betAmount"]
+    },
+    "wallets": {
+      "title": "wallets",
+      "description": "User wallet balances",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "points": { "type": "number" },
+        "currency": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["username", "points"]
+    },
+    "transactions": {
+      "title": "transactions",
+      "description": "Financial transaction history",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "refId": { "type": "string" },
+        "fromUser": { "type": "string" },
+        "toUser": { "type": "string" },
+        "type": { "type": "string" },
+        "amount": { "type": "number" },
+        "balanceAfter": { "type": "number" },
+        "remark": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["fromUser", "toUser", "amount"]
+    },
+    "deposits": {
+      "title": "deposits",
+      "description": "User deposit requests",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "amount": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "utrNumber": { "type": "string" },
+        "status": { "type": "string" },
+        "remark": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["username", "amount", "utrNumber"]
+    },
+    "withdrawals": {
+      "title": "withdrawals",
+      "description": "User withdrawal requests",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "amount": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "accountDetails": { "type": "string" },
+        "status": { "type": "string" },
+        "remark": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["username", "amount"]
+    },
+    "games": {
+      "title": "games",
+      "description": "Game configuration parameters",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "gameType": { "type": "string" },
+        "status": { "type": "string" },
+        "bettingLocked": { "type": "boolean" },
+        "mode": { "type": "string" },
+        "secondsRemaining": { "type": "number" },
+        "roundDurationSeconds": { "type": "number" },
+        "currentRoundNo": { "type": "string" },
+        "minBet": { "type": "number" },
+        "maxBet": { "type": "number" },
+        "payoutPercentage": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["gameType", "status"]
+    },
+    "results": {
+      "title": "results",
+      "description": "Game draw results",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "gameType": { "type": "string" },
+        "drawNumber": { "type": "string" },
+        "winningResult": { "type": "string" },
+        "drawTime": { "type": "string" },
+        "totalBets": { "type": "number" },
+        "totalPayout": { "type": "number" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["gameType", "winningResult"]
+    },
+    "notifications": {
+      "title": "notifications",
+      "description": "App notifications",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "time": { "type": "string" },
+        "type": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["title", "message"]
+    },
+    "settings": {
+      "title": "settings",
+      "description": "System settings and game configs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "key": { "type": "string" },
+        "value": { "type": "object" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["key"]
+    }
+  }
+}
