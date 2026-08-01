@@ -24,18 +24,23 @@ export const PlayerRegisterPage: React.FC = () => {
     }
   }, [playerSession, navigate]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!name.trim() || !username.trim() || !password || !phone) {
-      setErrorMsg('Please fill in all required fields.');
+    if (!name.trim() || !username.trim() || !password || !phone || !email.trim()) {
+      setErrorMsg('Please fill in all required fields including Email Address.');
+      return;
+    }
+
+    if (!email.includes('@')) {
+      setErrorMsg('Invalid Email Address');
       return;
     }
 
     setLoading(true);
-    setTimeout(() => {
-      const res = register(name, username, password, email, phone, refCode);
+    try {
+      const res = await register(name, username, password, email, phone, refCode);
       setLoading(false);
 
       if (res.success) {
@@ -43,7 +48,10 @@ export const PlayerRegisterPage: React.FC = () => {
       } else {
         setErrorMsg(res.message);
       }
-    }, 400);
+    } catch (err: any) {
+      setLoading(false);
+      setErrorMsg(err.message || 'Registration failed.');
+    }
   };
 
   return (
@@ -114,7 +122,7 @@ export const PlayerRegisterPage: React.FC = () => {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase text-slate-400">Email (Optional)</label>
+              <label className="text-[11px] font-bold uppercase text-slate-400">Email Address *</label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
                 <input
@@ -122,6 +130,7 @@ export const PlayerRegisterPage: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="rahul@gmail.com"
+                  required
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-9 pr-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-amber-500/50"
                 />
               </div>

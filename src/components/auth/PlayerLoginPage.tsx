@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAdmin } from '../../context/AdminContext';
-import { Gamepad2, Lock, User, Eye, EyeOff, ArrowRight, Gift } from 'lucide-react';
+import { Gamepad2, Lock, Mail, Eye, EyeOff, ArrowRight, Gift } from 'lucide-react';
 
 export const PlayerLoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { loginAsPlayer, isLoggedIn, userRole, isAuthLoading } = useAdmin();
 
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -28,14 +28,19 @@ export const PlayerLoginPage: React.FC = () => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!username.trim() || !password) {
-      setErrorMsg('Please enter your Mobile Number or Username and Password.');
+    if (!email.trim() || !password) {
+      setErrorMsg('Please enter your Email Address and Password.');
+      return;
+    }
+
+    if (!email.includes('@')) {
+      setErrorMsg('Invalid Email Address');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await loginAsPlayer(username.trim(), password);
+      const res = await loginAsPlayer(email.trim(), password);
       setLoading(false);
 
       if (res.success) {
@@ -92,14 +97,14 @@ export const PlayerLoginPage: React.FC = () => {
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Mobile Number / Username</label>
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Email Address</label>
             <div className="relative">
-              <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+              <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
               <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Mobile phone or username"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="player@example.com"
                 required
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition-all"
               />

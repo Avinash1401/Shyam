@@ -714,17 +714,17 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   // Authentication Methods
-  const login = async (usernameInput: string, passwordInput?: string): Promise<boolean> => {
-    const res = await loginAsPlayer(usernameInput, passwordInput);
+  const login = async (emailInput: string, passwordInput?: string): Promise<boolean> => {
+    const res = await loginAsPlayer(emailInput, passwordInput);
     return res.success;
   };
 
-  const loginAsPlayer = async (usernameInput: string, passwordInput?: string): Promise<{ success: boolean; message?: string; role?: 'admin' | 'player' }> => {
-    if (!usernameInput || !passwordInput) {
-      return { success: false, message: 'Please enter Username and Password.' };
+  const loginAsPlayer = async (emailInput: string, passwordInput?: string): Promise<{ success: boolean; message?: string; role?: 'admin' | 'player' }> => {
+    if (!emailInput || !passwordInput) {
+      return { success: false, message: 'Please enter Email Address and Password.' };
     }
 
-    const res = await loginFirestorePlayer(usernameInput, passwordInput);
+    const res = await loginFirestorePlayer(emailInput, passwordInput);
     if (res.success && res.user && res.role) {
       const role = res.role;
       setUserRole(role);
@@ -751,31 +751,23 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  const loginAsAdmin = async (usernameInput: string, passwordInput?: string, pinInput?: string): Promise<{ success: boolean; message?: string; role?: 'admin' | 'player' }> => {
-    if (!usernameInput || !passwordInput) {
-      return { success: false, message: 'Please enter Admin username and password.' };
+  const loginAsAdmin = async (emailInput: string, passwordInput?: string, pinInput?: string): Promise<{ success: boolean; message?: string; role?: 'admin' | 'player' }> => {
+    if (!emailInput || !passwordInput) {
+      return { success: false, message: 'Please enter Admin Email and Password.' };
     }
 
-    const res = await loginFirestoreAdmin(usernameInput, passwordInput, pinInput);
+    const res = await loginFirestoreAdmin(emailInput, passwordInput, pinInput);
     if (res.success && res.user && res.role) {
       const role = res.role;
       setUserRole(role);
       setCurrentUser(res.user);
       setIsLoggedIn(true);
 
-      if (role === 'admin') {
-        setAdminSession({ isLoggedIn: true, user: res.user });
-        setPlayerSession({ isLoggedIn: false, user: null });
-        setActiveRole('Admin');
-        setCurrentPage('dashboard');
-        addToast('Admin Authenticated', `Welcome back, ${res.user.name || res.user.username}!`, 'success');
-      } else {
-        setPlayerSession({ isLoggedIn: true, user: res.user });
-        setAdminSession({ isLoggedIn: false, user: null });
-        setActiveRole('Player');
-        setCurrentPage('user_game_portal');
-        addToast('Player Authenticated', `Welcome back, ${res.user.name || res.user.username}!`, 'success');
-      }
+      setAdminSession({ isLoggedIn: true, user: res.user });
+      setPlayerSession({ isLoggedIn: false, user: null });
+      setActiveRole('Admin');
+      setCurrentPage('dashboard');
+      addToast('Admin Authenticated', `Welcome back, ${res.user.name || res.user.username}!`, 'success');
       return { success: true, role };
     } else {
       addToast('Admin Login Failed', res.message || 'Access Denied.', 'error');

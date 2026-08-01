@@ -1,7 +1,8 @@
-export type UserRole = 'SuperAdmin' | 'SuperDistributer' | 'Distributer' | 'Retailer' | 'User';
+export type UserRole = 'SuperAdmin' | 'SuperDistributer' | 'Distributer' | 'Retailer' | 'User' | 'admin' | 'player';
 
 export interface UserAccount {
   id: string;
+  uid?: string;
   name: string;
   username: string;
   role: UserRole;

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAdmin } from '../../context/AdminContext';
-import { Shield, Key, Lock, User, Eye, EyeOff, ArrowRight, ShieldAlert, Sparkles } from 'lucide-react';
+import { Shield, Key, Lock, Mail, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { loginAsAdmin, isLoggedIn, userRole, isAuthLoading } = useAdmin();
 
-  const [username, setUsername] = useState('admin');
+  const [email, setEmail] = useState('admin@shyampanel.com');
   const [password, setPassword] = useState('Admin@123');
   const [pin, setPin] = useState('1234');
   const [showPassword, setShowPassword] = useState(false);
@@ -27,14 +27,19 @@ export const AdminLoginPage: React.FC = () => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!username.trim() || !password || !pin) {
-      setErrorMsg('Please enter Admin username, password, and security PIN.');
+    if (!email.trim() || !password || !pin) {
+      setErrorMsg('Please enter Admin Email, Password, and Security PIN.');
+      return;
+    }
+
+    if (!email.includes('@')) {
+      setErrorMsg('Invalid Email Address');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await loginAsAdmin(username.trim(), password, pin.trim());
+      const res = await loginAsAdmin(email.trim(), password, pin.trim());
       setLoading(false);
 
       if (res.success) {
@@ -77,7 +82,7 @@ export const AdminLoginPage: React.FC = () => {
             <span>Master Admin Credentials:</span>
           </div>
           <div className="font-mono text-[11px] text-slate-300 pl-6 space-y-0.5">
-            <div>Username: <span className="text-cyan-300 font-bold">admin</span></div>
+            <div>Email: <span className="text-cyan-300 font-bold">admin@shyampanel.com</span></div>
             <div>Password: <span className="text-amber-300 font-bold">Admin@123</span></div>
             <div>PIN: <span className="text-cyan-300 font-bold">1234</span></div>
           </div>
@@ -94,14 +99,14 @@ export const AdminLoginPage: React.FC = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Admin Username</label>
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Admin Email Address</label>
             <div className="relative">
-              <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+              <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
               <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="superadmin"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@shyampanel.com"
                 required
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono"
               />

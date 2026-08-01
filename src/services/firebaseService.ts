@@ -202,30 +202,19 @@ export async function getFirestoreUserByAuthUser(firebaseUser: FirebaseUser): Pr
     if (userSnap.exists()) {
       userObj = userSnap.data() as UserAccount;
     } else if (firebaseUser.email) {
-      const qEmail = query(collection(db, 'users'), where('email', '==', firebaseUser.email.toLowerCase()));
+      const userEmail = firebaseUser.email.toLowerCase().trim();
+      const qEmail = query(collection(db, 'users'), where('email', '==', userEmail));
       const snapEmail = await getDocs(qEmail);
       if (!snapEmail.empty) {
         userObj = snapEmail.docs[0].data() as UserAccount;
-      } else {
-        const usernamePart = firebaseUser.email.split('@')[0].toLowerCase();
-        const userDoc = await getDoc(doc(db, 'users', usernamePart));
-        if (userDoc.exists()) {
-          userObj = userDoc.data() as UserAccount;
-        }
       }
     }
 
-    if (!userObj && (firebaseUser.email?.includes('admin') || firebaseUser.email?.includes('shyampanel.com'))) {
+    if (!userObj && (firebaseUser.email?.toLowerCase().includes('admin'))) {
       userObj = defaultMasterAdmin;
     }
 
     if (userObj) {
-      if (userObj.username) {
-        const freshSnap = await getDoc(doc(db, 'users', userObj.username.toLowerCase()));
-        if (freshSnap.exists()) {
-          userObj = freshSnap.data() as UserAccount;
-        }
-      }
       const role = normalizeRole(userObj.role);
       return { user: userObj, role };
     }
@@ -244,57 +233,41 @@ export async function logoutFirestoreUser() {
   }
 }
 
-// Admin Login Handler
-export async function loginFirestoreAdmin(usernameInput: string, passwordInput: string, pinInput?: string) {
-  const normUser = usernameInput.trim().toLowerCase();
-
+// Admin Login Handler (Email + Password only)
+export async function loginFirestoreAdmin(emailInput: string, passwordInput: string, pinInput?: string) {
   if (pinInput && pinInput !== '1234' && pinInput !== '9999') {
     return { success: false, message: 'Invalid Master Security PIN.' };
   }
 
-  const userRef = doc(db, 'users', normUser);
-  let userSnap = await getDoc(userRef);
-  let userObj: UserAccount | null = null;
+  const cleanEmail = emailInput ? emailInput.trim().toLowerCase() : '';
 
-  if (userSnap.exists()) {
-    userObj = userSnap.data() as UserAccount;
-  } else if (normUser === 'admin' || normUser === 'superadmin') {
-    userObj = defaultMasterAdmin;
-  } else {
-    const q = query(collection(db, 'users'), where('username', '==', normUser));
-    const querySnap = await getDocs(q);
-    if (!querySnap.empty) {
-      userObj = querySnap.docs[0].data() as UserAccount;
-    }
+  if (!cleanEmail || !cleanEmail.includes('@')) {
+    return { success: false, message: 'Invalid Email Address' };
   }
-
-  if (!userObj) {
-    return { success: false, message: 'Admin account not found in Firestore.' };
-  }
-
-  const allowedRoles = ['SuperAdmin', 'admin', 'SuperDistributer', 'Distributer', 'Retailer'];
-  if (!allowedRoles.includes(userObj.role)) {
-    return { success: false, message: 'Access Denied: Account is not authorized for Admin access.' };
-  }
-
-  const emailToAuth = userObj.email || `${normUser}@shyampanel.com`;
 
   try {
-    const userCred = await signInWithEmailAndPassword(auth, emailToAuth, passwordInput);
-    // Immediately fetch user document from Firestore after Auth succeeds
-    const freshDoc = await getDoc(doc(db, 'users', userObj.username || normUser));
-    const finalUser = freshDoc.exists() ? (freshDoc.data() as UserAccount) : userObj;
-    const role = normalizeRole(finalUser.role);
+    const userCred = await signInWithEmailAndPassword(auth, cleanEmail, passwordInput);
+    const result = await getFirestoreUserByAuthUser(userCred.user);
 
-    return { success: true, user: finalUser, role, firebaseUser: userCred.user };
+    if (!result || !result.user) {
+      return { success: false, message: 'Admin account profile not found in Firestore.' };
+    }
+
+    const role = normalizeRole(result.user.role);
+    if (role !== 'admin') {
+      return { success: false, message: 'Access Denied: Account is not authorized for Admin access.' };
+    }
+
+    return { success: true, user: result.user, role, firebaseUser: userCred.user };
   } catch (authError: any) {
-    // Auto-bootstrap master admin in Firebase Auth if needed
+    // Auto-bootstrap master admin account if Firebase Auth user doesn't exist yet for admin@shyampanel.com
     if (
-      (normUser === 'admin' || normUser === 'superadmin') &&
+      cleanEmail === 'admin@shyampanel.com' &&
       passwordInput === 'Admin@123'
     ) {
       try {
-        const newCred = await createUserWithEmailAndPassword(auth, emailToAuth, passwordInput);
+        const newCred = await createUserWithEmailAndPassword(auth, cleanEmail, passwordInput);
+        await setDoc(doc(db, 'users', newCred.user.uid), defaultMasterAdmin, { merge: true });
         await setDoc(doc(db, 'users', 'admin'), defaultMasterAdmin, { merge: true });
         return { success: true, user: defaultMasterAdmin, role: 'admin' as const, firebaseUser: newCred.user };
       } catch (createErr: any) {
@@ -304,85 +277,64 @@ export async function loginFirestoreAdmin(usernameInput: string, passwordInput: 
       }
     }
 
-    if (userObj.password && userObj.password === passwordInput) {
-      try {
-        const newCred = await createUserWithEmailAndPassword(auth, emailToAuth, passwordInput);
-        const role = normalizeRole(userObj.role);
-        return { success: true, user: userObj, role, firebaseUser: newCred.user };
-      } catch (e) {
-        const role = normalizeRole(userObj.role);
-        return { success: true, user: userObj, role };
-      }
+    if (authError.code === 'auth/invalid-email') {
+      return { success: false, message: 'Invalid Email Address' };
     }
 
-    return { success: false, message: 'Invalid Admin credentials or password.' };
+    if (authError.code === 'auth/wrong-password' || authError.code === 'auth/invalid-credential') {
+      return { success: false, message: 'Wrong Password' };
+    }
+
+    if (authError.code === 'auth/user-not-found') {
+      return { success: false, message: 'Invalid Email Address or User not found' };
+    }
+
+    return { success: false, message: authError.message || 'Login failed.' };
   }
 }
 
-// Player Login Handler (Search Firestore users by Username -> Get Email -> Firebase Auth)
-export async function loginFirestorePlayer(usernameInput: string, passwordInput: string) {
-  const normUser = usernameInput.trim().toLowerCase();
+// Player Login Handler (Email + Password only)
+export async function loginFirestorePlayer(emailInput: string, passwordInput: string) {
+  const cleanEmail = emailInput ? emailInput.trim().toLowerCase() : '';
 
-  // 1. Search Firestore users collection by username
-  const userRef = doc(db, 'users', normUser);
-  let userSnap = await getDoc(userRef);
-  let userObj: UserAccount | null = null;
-
-  if (userSnap.exists()) {
-    userObj = userSnap.data() as UserAccount;
-  } else {
-    const q = query(collection(db, 'users'), where('username', '==', normUser));
-    const querySnap = await getDocs(q);
-    if (!querySnap.empty) {
-      userObj = querySnap.docs[0].data() as UserAccount;
-    }
+  if (!cleanEmail || !cleanEmail.includes('@')) {
+    return { success: false, message: 'Invalid Email Address' };
   }
 
-  if (!userObj) {
-    return { success: false, message: 'Player account not found. Please register first.' };
-  }
-
-  const userEmail = userObj.email || `${normUser}@shyampanel.internal`;
-
-  // 2. Authenticate using Firebase Authentication
   try {
-    const userCred = await signInWithEmailAndPassword(auth, userEmail, passwordInput);
-    await updateDoc(doc(db, 'users', userObj.username), {
+    const userCred = await signInWithEmailAndPassword(auth, cleanEmail, passwordInput);
+    const result = await getFirestoreUserByAuthUser(userCred.user);
+
+    if (!result || !result.user) {
+      return { success: false, message: 'Player account profile not found in Firestore.' };
+    }
+
+    const finalUser = result.user;
+    const docKey = finalUser.uid || userCred.user.uid;
+    await updateDoc(doc(db, 'users', docKey), {
       lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
     }).catch(() => {});
 
-    // Immediately fetch user document from Firestore after Auth succeeds
-    const freshDoc = await getDoc(doc(db, 'users', userObj.username));
-    const finalUser = freshDoc.exists() ? (freshDoc.data() as UserAccount) : userObj;
     const role = normalizeRole(finalUser.role);
-
     return { success: true, user: finalUser, role, firebaseUser: userCred.user };
   } catch (authError: any) {
-    if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential') {
-      if (userObj.password && userObj.password === passwordInput) {
-        try {
-          const newCred = await createUserWithEmailAndPassword(auth, userEmail, passwordInput);
-          const role = normalizeRole(userObj.role);
-          return { success: true, user: userObj, role, firebaseUser: newCred.user };
-        } catch (createErr: any) {
-          if (createErr.code === 'auth/email-already-in-use') {
-            return { success: false, message: 'Invalid password. Please check your credentials.' };
-          }
-          return { success: false, message: 'Authentication failed.' };
-        }
-      }
-      return { success: false, message: 'Invalid password. Please try again.' };
+    if (authError.code === 'auth/invalid-email') {
+      return { success: false, message: 'Invalid Email Address' };
     }
 
-    if (authError.code === 'auth/wrong-password') {
-      return { success: false, message: 'Invalid password. Please check your credentials.' };
+    if (authError.code === 'auth/user-not-found') {
+      return { success: false, message: 'User not found. Please register first.' };
     }
 
-    return { success: false, message: authError.message || 'Login failed. Please check credentials.' };
+    if (authError.code === 'auth/wrong-password' || authError.code === 'auth/invalid-credential') {
+      return { success: false, message: 'Wrong Password' };
+    }
+
+    return { success: false, message: authError.message || 'Login failed.' };
   }
 }
 
-// Player Registration Handler (Create Firebase Auth account & Firestore user document)
+// Player Registration Handler (Email + Password Firebase Auth & Firestore user profile)
 export async function registerFirestorePlayer(params: {
   name: string;
   username: string;
@@ -392,93 +344,71 @@ export async function registerFirestorePlayer(params: {
   refCode?: string;
 }) {
   const { name, username, email, phone, password, refCode } = params;
-  const cleanUsername = username.trim().toLowerCase();
-  const cleanEmail = (email && email.trim()) ? email.trim().toLowerCase() : `${cleanUsername}@shyampanel.internal`;
+  const cleanEmail = email ? email.trim().toLowerCase() : '';
+  const cleanUsername = username ? username.trim() : '';
 
-  if (!cleanUsername || !password || !name.trim()) {
+  if (!cleanEmail || !cleanEmail.includes('@')) {
+    return { success: false, message: 'Invalid Email Address' };
+  }
+
+  if (!password || !name.trim()) {
     return { success: false, message: 'Please fill in all required fields.' };
   }
 
-  // 1. Check if Firestore username already exists
-  const userRef = doc(db, 'users', cleanUsername);
-  const existingUser = await getDoc(userRef);
-  if (existingUser.exists()) {
-    return { success: false, message: 'Username is already taken. Please choose another.' };
+  // 1. Check if Firestore user with email already exists
+  const emailQuery = query(collection(db, 'users'), where('email', '==', cleanEmail));
+  const emailSnap = await getDocs(emailQuery);
+  if (!emailSnap.empty) {
+    return { success: false, message: 'Email address is already registered.' };
   }
 
-  // 2. Check if Firestore user with email already exists
-  if (email && email.trim()) {
-    const emailQuery = query(collection(db, 'users'), where('email', '==', cleanEmail));
-    const emailSnap = await getDocs(emailQuery);
-    if (!emailSnap.empty) {
-      return { success: false, message: 'Email address is already registered.' };
-    }
-  }
-
-  // 3. Create Firebase Authentication Account
+  // 2. Create Firebase Authentication Account
   let firebaseUid = '';
   try {
     const authRes = await createUserWithEmailAndPassword(auth, cleanEmail, password);
     firebaseUid = authRes.user.uid;
   } catch (authError: any) {
     if (authError.code === 'auth/email-already-in-use') {
-      return { success: false, message: 'This email is already in use in Firebase Auth.' };
+      return { success: false, message: 'This email is already registered.' };
     }
     if (authError.code === 'auth/weak-password') {
       return { success: false, message: 'Password should be at least 6 characters long.' };
     }
     if (authError.code === 'auth/invalid-email') {
-      return { success: false, message: 'Invalid email address format.' };
+      return { success: false, message: 'Invalid Email Address' };
     }
     return { success: false, message: authError.message || 'Registration failed in Firebase Auth.' };
   }
 
-  // 4. Create Firestore Document in `users` collection
+  // 3. Create Firestore Document in `users` collection using UID
   const newUser: UserAccount = {
-    id: `usr-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
+    id: firebaseUid || `usr-${Date.now()}`,
+    uid: firebaseUid,
     name: name.trim(),
-    username: cleanUsername,
+    username: cleanUsername || name.trim(), // Stored as a display field in Firestore
     password,
-    role: 'User',
+    email: cleanEmail,
+    phone: phone ? phone.trim() : '',
     points: 1000,
     creditLimit: 5000,
-    status: 'active',
     commissionRate: 0,
-    phone: phone.trim(),
-    email: cleanEmail,
-    parentName: 'Direct Signup',
-    createdAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    role: 'player',
+    status: 'active',
+    referralCode: refCode?.trim() || '',
+    createdAt: new Date().toISOString().split('T')[0],
     lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 16),
-    referralCode: refCode?.trim() || `REF-${cleanUsername.toUpperCase()}`,
   };
 
-  await setDoc(userRef, newUser);
+  try {
+    await setDoc(doc(db, 'users', firebaseUid), newUser, { merge: true });
+    if (cleanUsername) {
+      await setDoc(doc(db, 'users', cleanUsername.toLowerCase()), newUser, { merge: true });
+    }
+  } catch (e) {
+    console.error('Error saving user profile to Firestore:', e);
+  }
 
-  // 5. Create Wallet document in `wallets` collection
-  await setDoc(doc(db, 'wallets', cleanUsername), {
-    id: `wlt-${cleanUsername}`,
-    username: cleanUsername,
-    points: newUser.points,
-    currency: 'INR',
-    updatedAt: new Date().toISOString(),
-  });
-
-  // 6. Create initial Welcome Transaction in `transactions` collection
-  const txRef = doc(collection(db, 'transactions'));
-  const welcomeTx: TransactionRecord = {
-    id: `TXN-REG-${Date.now()}`,
-    refId: `REF-REG-${Math.floor(100000 + Math.random() * 900000)}`,
-    fromUser: 'System Signup Bonus',
-    toUser: cleanUsername,
-    type: 'Credit',
-    amount: newUser.points,
-    balanceAfter: newUser.points,
-    remark: 'Account Registration Initial Wallet Bonus',
-    timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-  };
-  await setDoc(txRef, welcomeTx);
-
-  return { success: true, user: newUser, message: 'Registration successful!' };
+  return { success: true, user: newUser, role: 'player' as const, message: 'Registration successful!' };
 }
 
 export async function signOutFirebaseUser() {
