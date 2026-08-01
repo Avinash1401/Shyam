@@ -168,6 +168,37 @@
         "updatedAt": { "type": "string" }
       },
       "required": ["key"]
+    },
+    "online_players": {
+      "title": "online_players",
+      "description": "Currently active and online players in the lobby",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "role": { "type": "string" },
+        "parent": { "type": "string" },
+        "currentGame": { "type": "string" },
+        "currentBet": { "type": "number" },
+        "points": { "type": "number" },
+        "status": { "type": "string" },
+        "isOnline": { "type": "boolean" },
+        "connectedAt": { "type": "string" }
+      },
+      "required": ["username"]
     }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "users", "description": "Users collection" },
+    "/bets/{betId}": { "schema": "bets", "description": "Bets collection" },
+    "/wallets/{walletId}": { "schema": "wallets", "description": "Wallets collection" },
+    "/transactions/{txId}": { "schema": "transactions", "description": "Transactions collection" },
+    "/deposits/{depositId}": { "schema": "deposits", "description": "Deposits collection" },
+    "/withdrawals/{withdrawalId}": { "schema": "withdrawals", "description": "Withdrawals collection" },
+    "/games/{gameId}": { "schema": "games", "description": "Games collection" },
+    "/results/{resultId}": { "schema": "results", "description": "Results collection" },
+    "/notifications/{notificationId}": { "schema": "notifications", "description": "Notifications collection" },
+    "/settings/{settingId}": { "schema": "settings", "description": "Settings collection" },
+    "/online_players/{playerId}": { "schema": "online_players", "description": "Online players collection" }
   }
 }

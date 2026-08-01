@@ -45,6 +45,10 @@ service cloud.firestore {
     match /settings/{settingId} {
       allow read, write: if true;
     }
+
+    match /online_players/{playerId} {
+      allow read, write: if true;
+    }
   }
 }
 

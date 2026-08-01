@@ -30,6 +30,8 @@ import {
   subscribeResults,
   subscribeNotifications,
   subscribeSettings,
+  subscribeOnlinePlayers,
+  removeOnlinePlayer,
   initializeFirestoreDatabase,
   registerFirestoreUser,
   placeFirestoreBet,
@@ -273,20 +275,20 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     // 2. Subscribe to `users` collection (updates users, superDistributers, distributers, retailers)
     const unsubUsers = subscribeUsers((fetchedUsers) => {
-      setUsers(fetchedUsers.filter((u) => u.role === 'User'));
+      setUsers(fetchedUsers.filter((u) => u.role === 'User' || u.role === 'player' || (!['SuperAdmin', 'admin', 'SuperDistributer', 'Distributer', 'Retailer'].includes(u.role as string))));
       setSuperDistributers(fetchedUsers.filter((u) => u.role === 'SuperDistributer'));
       setDistributers(fetchedUsers.filter((u) => u.role === 'Distributer'));
       setRetailers(fetchedUsers.filter((u) => u.role === 'Retailer'));
 
       // Dynamically update logged in user points from Firestore
       if (currentUser) {
-        const matching = fetchedUsers.find((u) => u.username === currentUser.username);
+        const matching = fetchedUsers.find((u) => u.username === currentUser.username || u.email === currentUser.email);
         if (matching) {
           setCurrentUser((prev) => (prev ? { ...prev, points: matching.points, status: matching.status } : null));
         }
       }
       if (playerSession.user) {
-        const matching = fetchedUsers.find((u) => u.username === playerSession.user?.username);
+        const matching = fetchedUsers.find((u) => u.username === playerSession.user?.username || u.email === playerSession.user?.email);
         if (matching) {
           setPlayerSession((prev) => (prev.user ? { ...prev, user: { ...prev.user, points: matching.points } } : prev));
         }
@@ -344,6 +346,11 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (l12 && l12.length > 0) setLucky12Cards(l12);
     });
 
+    // 12. Subscribe to `online_players` collection
+    const unsubOnline = subscribeOnlinePlayers((fetchedOnline) => {
+      setOnlinePlayers(fetchedOnline);
+    });
+
     return () => {
       unsubUsers();
       unsubBets();
@@ -355,6 +362,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       unsubResults();
       unsubNotifs();
       unsubSettings();
+      unsubOnline();
     };
   }, []);
 
@@ -870,15 +878,16 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     paymentMethod: 'UPI' | 'Bank Transfer' | 'Crypto' | 'USDT',
     utrNumber: string
   ): Promise<boolean> => {
-    if (!currentUser) {
+    const targetUser = (playerSession?.isLoggedIn && playerSession.user) ? playerSession.user : currentUser;
+    if (!targetUser) {
       addToast('Error', 'Please log in to submit deposit request.', 'error');
       return false;
     }
 
     try {
       const res = await createFirestoreDeposit({
-        username: currentUser.username,
-        userRole: currentUser.role || 'User',
+        username: targetUser.username,
+        userRole: targetUser.role || 'User',
         amount,
         paymentMethod,
         utrNumber,
@@ -924,11 +933,15 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     paymentMethod: 'UPI' | 'Bank Transfer',
     accountDetails: string
   ): Promise<boolean> => {
-    if (!currentUser) return false;
+    const targetUser = (playerSession?.isLoggedIn && playerSession.user) ? playerSession.user : currentUser;
+    if (!targetUser) {
+      addToast('Error', 'Please log in to submit withdrawal request.', 'error');
+      return false;
+    }
     try {
       const res = await createFirestoreWithdrawal({
-        username: currentUser.username,
-        userRole: currentUser.role || 'User',
+        username: targetUser.username,
+        userRole: targetUser.role || 'User',
         amount,
         paymentMethod,
         accountDetails,

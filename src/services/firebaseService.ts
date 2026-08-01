@@ -3,6 +3,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  getDocFromServer,
   setDoc,
   updateDoc,
   onSnapshot,
@@ -20,6 +21,7 @@ import {
 import { db, auth } from '../lib/firebase';
 import {
   UserAccount,
+  OnlinePlayer,
   GameTicket,
   DepositRequest,
   WithdrawalRequest,
@@ -78,8 +80,65 @@ export const defaultMasterAdmin: UserAccount = {
   referralCode: 'REF-ADMIN',
 };
 
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  };
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map((provider) => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || [],
+    },
+    operationType,
+    path,
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+}
+
+export async function testConnection() {
+  try {
+    await getDocFromServer(doc(db, 'settings', 'winPercentages'));
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('the client is offline')) {
+      console.error('Please check your Firebase configuration.');
+    }
+  }
+}
+
 // Seed Firestore initial data if collections are empty
 export async function initializeFirestoreDatabase() {
+  testConnection();
   try {
     // 1. Users & Wallets Seed
     const usersSnap = await getDocs(collection(db, 'users'));
@@ -527,11 +586,17 @@ export async function signOutFirebaseUser() {
 export function subscribeUsers(callback: (users: UserAccount[]) => void) {
   const q = collection(db, 'users');
   return onSnapshot(q, (snapshot) => {
-    const users: UserAccount[] = [];
+    const userMap = new Map<string, UserAccount>();
     snapshot.forEach((docSnap) => {
-      users.push(docSnap.data() as UserAccount);
+      const data = docSnap.data() as UserAccount;
+      if (data && (data.username || data.email || data.id)) {
+        const key = (data.username || data.email || data.id).toLowerCase();
+        if (!userMap.has(key)) {
+          userMap.set(key, data);
+        }
+      }
     });
-    callback(users);
+    callback(Array.from(userMap.values()));
   }, (err) => console.error('Error listening to users:', err));
 }
 
@@ -661,6 +726,63 @@ export function subscribeSettings(callback: (settings: { winPercentages?: WinPer
   }, (err) => console.error('Error listening to settings:', err));
 }
 
+// 11. ONLINE PLAYERS COLLECTION
+export function subscribeOnlinePlayers(callback: (players: OnlinePlayer[]) => void) {
+  const q = collection(db, 'online_players');
+  return onSnapshot(q, (snapshot) => {
+    const players: OnlinePlayer[] = [];
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data() as OnlinePlayer & { isOnline?: boolean };
+      if (data && data.isOnline !== false && data.username) {
+        players.push(data);
+      }
+    });
+    callback(players);
+  }, (err) => {
+    console.error('Error listening to online players:', err);
+    try {
+      handleFirestoreError(err, OperationType.LIST, 'online_players');
+    } catch (e) {
+      // logged
+    }
+  });
+}
+
+export async function recordOnlinePlayerActivity(user: UserAccount, currentGame: '2D Lottery' | '3D Lottery' | 'Lucky 12' | '12 Card' = '2D Lottery', activeWager: number = 0) {
+  try {
+    const username = (user.username || user.name || user.id).toLowerCase();
+    const onlineRef = doc(db, 'online_players', username);
+    const onlineData: OnlinePlayer & { isOnline: boolean; lastActiveMs: number } = {
+      id: user.id || `usr-${username}`,
+      username: user.username || username,
+      role: user.role || 'User',
+      parent: user.parentName || 'Direct Player',
+      currentGame,
+      currentBet: activeWager,
+      points: user.points || 0,
+      ipAddress: '127.0.0.1 (Web)',
+      device: 'Mobile Web Client',
+      connectedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      status: activeWager > 0 ? 'In Game' : 'Lobby',
+      isOnline: true,
+      lastActiveMs: Date.now(),
+    };
+    await setDoc(onlineRef, onlineData, { merge: true });
+  } catch (err) {
+    console.error('Error recording online player activity:', err);
+  }
+}
+
+export async function removeOnlinePlayer(username: string) {
+  try {
+    const cleanUsername = username.toLowerCase();
+    const onlineRef = doc(db, 'online_players', cleanUsername);
+    await setDoc(onlineRef, { isOnline: false, activeWager: 0 }, { merge: true });
+  } catch (err) {
+    console.error('Error removing online player:', err);
+  }
+}
+
 // -----------------------------------------------------------------------------
 // MUTATION OPERATIONS (Registration, Bets, Wallet, Deposit, Withdrawal, etc.)
 // -----------------------------------------------------------------------------
@@ -723,13 +845,37 @@ export async function placeFirestoreBet(params: {
   parentName?: string;
 }) {
   const { username, gameType, selectedNumbers, betAmount, drawTime, userRole = 'User', parentName = 'Direct Player' } = params;
-  const userRef = doc(db, 'users', username);
-  const walletRef = doc(db, 'wallets', username);
+  const cleanUsername = username.trim().toLowerCase();
 
-  return await runTransaction(db, async (transaction) => {
+  // Find user document reference
+  let targetDocId = username;
+  let userSnap = await getDoc(doc(db, 'users', targetDocId));
+  if (!userSnap.exists()) {
+    userSnap = await getDoc(doc(db, 'users', cleanUsername));
+    if (userSnap.exists()) {
+      targetDocId = cleanUsername;
+    } else {
+      const qUser = query(collection(db, 'users'), where('username', '==', username));
+      const snapUser = await getDocs(qUser);
+      if (!snapUser.empty) {
+        targetDocId = snapUser.docs[0].id;
+      } else {
+        const qEmail = query(collection(db, 'users'), where('email', '==', cleanUsername));
+        const snapEmail = await getDocs(qEmail);
+        if (!snapEmail.empty) {
+          targetDocId = snapEmail.docs[0].id;
+        }
+      }
+    }
+  }
+
+  const userRef = doc(db, 'users', targetDocId);
+  const walletRef = doc(db, 'wallets', targetDocId);
+
+  const res = await runTransaction(db, async (transaction) => {
     const userDoc = await transaction.get(userRef);
     if (!userDoc.exists()) {
-      throw new Error('User account not found.');
+      throw new Error(`User account "${username}" not found.`);
     }
     const userData = userDoc.data() as UserAccount;
     const currentPoints = userData.points || 0;
@@ -741,15 +887,15 @@ export async function placeFirestoreBet(params: {
     const updatedPoints = currentPoints - betAmount;
 
     transaction.update(userRef, { points: updatedPoints });
-    transaction.set(walletRef, { username, points: updatedPoints, updatedAt: new Date().toISOString() }, { merge: true });
+    transaction.set(walletRef, { username: userData.username || cleanUsername, points: updatedPoints, updatedAt: new Date().toISOString() }, { merge: true });
 
     const ticketNo = `TKT-${gameType.substring(0, 2).toUpperCase()}-${Math.floor(100000 + Math.random() * 900000)}`;
     const betRef = doc(db, 'bets', ticketNo);
     const newTicket: GameTicket = {
       id: `bet-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
       ticketNo,
-      username,
-      playerName: userData.name || username,
+      username: userData.username || cleanUsername,
+      playerName: userData.name || userData.username || cleanUsername,
       role: userData.role || userRole,
       parentName: userData.parentName || parentName,
       gameType,
@@ -766,7 +912,7 @@ export async function placeFirestoreBet(params: {
     const newTx: TransactionRecord = {
       id: `TXN-BET-${Date.now()}`,
       refId: `REF-${Math.floor(100000 + Math.random() * 900000)}`,
-      fromUser: username,
+      fromUser: userData.username || cleanUsername,
       toUser: `System Pool (${gameType})`,
       type: 'Debit',
       amount: betAmount,
@@ -776,13 +922,49 @@ export async function placeFirestoreBet(params: {
     };
     transaction.set(txDocRef, newTx);
 
-    return { success: true, ticket: newTicket, updatedPoints };
+    // Notification for Admin Live Bets Feed
+    const notifRef = doc(collection(db, 'notifications'));
+    const notif: AppNotification = {
+      id: `notif-bet-${Date.now()}`,
+      title: 'New Live Bet Placed',
+      description: `${userData.username || cleanUsername} placed ₹${betAmount} on ${gameType} (Ticket #${ticketNo})`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      createdAtMs: Date.now(),
+      type: 'success',
+      read: false,
+      fingerprint: `bet-${ticketNo}`,
+    };
+    transaction.set(notifRef, notif);
+
+    return { success: true, ticket: newTicket, updatedPoints, user: userData };
   });
+
+  if (res.user) {
+    await recordOnlinePlayerActivity(res.user, gameType, betAmount);
+  }
+
+  return res;
 }
 
 export async function adjustFirestoreWalletPoints(username: string, amount: number, type: 'Credit' | 'Debit', remark: string) {
-  const userRef = doc(db, 'users', username);
-  const walletRef = doc(db, 'wallets', username);
+  const cleanUsername = username.trim().toLowerCase();
+  let targetDocId = username;
+  let userSnap = await getDoc(doc(db, 'users', targetDocId));
+  if (!userSnap.exists()) {
+    userSnap = await getDoc(doc(db, 'users', cleanUsername));
+    if (userSnap.exists()) {
+      targetDocId = cleanUsername;
+    } else {
+      const qUser = query(collection(db, 'users'), where('username', '==', username));
+      const snapUser = await getDocs(qUser);
+      if (!snapUser.empty) {
+        targetDocId = snapUser.docs[0].id;
+      }
+    }
+  }
+
+  const userRef = doc(db, 'users', targetDocId);
+  const walletRef = doc(db, 'wallets', targetDocId);
 
   return await runTransaction(db, async (transaction) => {
     const userDoc = await transaction.get(userRef);
@@ -803,14 +985,14 @@ export async function adjustFirestoreWalletPoints(username: string, amount: numb
     }
 
     transaction.update(userRef, { points: updatedPoints });
-    transaction.set(walletRef, { username, points: updatedPoints, updatedAt: new Date().toISOString() }, { merge: true });
+    transaction.set(walletRef, { username: userData.username || cleanUsername, points: updatedPoints, updatedAt: new Date().toISOString() }, { merge: true });
 
     const txDocRef = doc(collection(db, 'transactions'));
     const newTx: TransactionRecord = {
       id: `TXN-ADJ-${Date.now()}`,
       refId: `REF-ADJ-${Math.floor(100000 + Math.random() * 900000)}`,
-      fromUser: type === 'Credit' ? 'Admin / Master Wallet' : username,
-      toUser: type === 'Credit' ? username : 'Admin / Master Wallet',
+      fromUser: type === 'Credit' ? 'Admin / Master Wallet' : (userData.username || cleanUsername),
+      toUser: type === 'Credit' ? (userData.username || cleanUsername) : 'Admin / Master Wallet',
       type: type,
       amount: amount,
       balanceAfter: updatedPoints,
