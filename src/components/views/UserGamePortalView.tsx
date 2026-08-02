@@ -27,6 +27,7 @@ import {
   Filter,
   LogOut,
   Gift,
+  KeyRound,
 } from 'lucide-react';
 
 export const UserGamePortalView: React.FC = () => {
@@ -70,6 +71,9 @@ export const UserGamePortalView: React.FC = () => {
   const [selected2DNumbers, setSelected2DNumbers] = useState<string[]>([]);
   const [searchQuery2D, setSearchQuery2D] = useState<string>('');
   const [active2DRange, setActive2DRange] = useState<string>('all');
+  const [selected2DRangeBlock, setSelected2DRangeBlock] = useState<string>('5000-5099');
+  const [boRowValues, setBoRowValues] = useState<{ [rowKey: string]: string }>({});
+  const [quickFilter2D, setQuickFilter2D] = useState<string>('All');
 
   // Modals
   const [showDepositModal, setShowDepositModal] = useState<boolean>(false);
@@ -743,166 +747,408 @@ export const UserGamePortalView: React.FC = () => {
 
           {/* ===================== GAME 3: 2D GAME ===================== */}
           {activeTab === '2d' && (
-            <div className="space-y-6">
+            <div className="space-y-3.5">
               
-              {/* 2D Header Bar */}
-              <div className="p-4 sm:p-5 rounded-3xl bg-slate-900/80 border border-cyan-500/30 backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-[0_0_30px_rgba(14,165,233,0.1)]">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Dices className="w-5 h-5 text-cyan-400 animate-pulse" />
-                    <h2 className="text-base sm:text-lg font-black text-white tracking-wide">2D NUMBER GRID (00 - 99)</h2>
-                    <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[10px] font-bold">
-                      90x WIN
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Select 2-digit numbers manually or use Quick Select filters.
-                  </p>
+              {/* TOP HEADER 1: Date/Time + Top Draw Winners Bar */}
+              <div className="p-2.5 rounded-2xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-2xl flex flex-col md:flex-row items-center gap-2 shadow-xl overflow-hidden">
+                {/* Date/Time Badge */}
+                <div className="px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-800 text-center shrink-0">
+                  <div className="font-mono text-xs font-bold text-slate-300">2026-08-01</div>
+                  <div className="font-mono text-xs font-black text-amber-400">10:00 PM</div>
                 </div>
 
-                {/* Search Bar for 2D Numbers */}
-                <div className="relative w-full md:w-64">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Search Number (e.g. 48)"
-                    value={searchQuery2D}
-                    onChange={(e) => setSearchQuery2D(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-white focus:outline-none focus:border-cyan-500"
-                  />
-                  {searchQuery2D && (
-                    <button
-                      onClick={() => setSearchQuery2D('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                {/* Top Winning Number Cards Bar */}
+                <div className="flex items-center gap-1.5 overflow-x-auto w-full custom-scrollbar pb-1 md:pb-0">
+                  {['5042', '5159', '5288', '5317', '5428', '5580', '5604', '5749', '5819', '5951'].map((num, i) => (
+                    <div
+                      key={`winner-${i}`}
+                      className="px-3.5 py-2 rounded-xl bg-gradient-to-b from-orange-500 to-amber-600 text-slate-950 font-mono font-black text-xs shadow-md shrink-0 border border-amber-300/40 tracking-wider hover:scale-105 transition-all cursor-pointer"
                     >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                      {num}
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Quick Filter Controls: Even/Odd, Small/Big, Range Selection, Quick Select */}
-              <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold text-slate-400 flex items-center gap-1 mr-2">
-                  <Filter className="w-3.5 h-3.5 text-cyan-400" />
-                  Quick Filters:
-                </span>
+              {/* TOP HEADER 2: Info Widgets (Free Points, Today, Time, Timeslot, Countdown Timer) */}
+              <div className="p-2.5 rounded-2xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-2xl grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-center text-xs font-bold shadow-xl">
+                <div className="p-2 rounded-xl bg-slate-950/90 border border-slate-800 text-slate-200 flex items-center justify-center gap-1">
+                  <span className="text-slate-400">{activeUser?.username || 'Anil'}'s Free Point:</span>
+                  <span className="text-amber-400 font-mono font-black text-sm">{activeUser?.points || 256}</span>
+                </div>
+
+                <div className="p-2 rounded-xl bg-teal-950/60 border border-teal-800/50 text-teal-300 flex items-center justify-center gap-1">
+                  <span className="text-teal-400">Today :</span>
+                  <span>Sat, 01-Aug-2026</span>
+                </div>
+
+                <div className="p-2 rounded-xl bg-cyan-950/60 border border-cyan-800/50 text-cyan-300 flex items-center justify-center gap-1 font-mono">
+                  <span className="text-cyan-400">Current Time :</span>
+                  <span className="text-cyan-200 font-black">10:55:29</span>
+                </div>
+
+                <div className="p-2 rounded-xl bg-sky-950/60 border border-sky-800/50 text-sky-300 flex items-center justify-center gap-1 font-mono">
+                  <span className="text-sky-400">Current Timeslot :</span>
+                  <span className="text-cyan-300 font-black">11:00 PM</span>
+                </div>
+
+                <div className="p-2 rounded-xl bg-emerald-950/80 border border-emerald-600/60 text-emerald-300 flex items-center justify-center gap-1 col-span-2 sm:col-span-1">
+                  <Clock className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                  <span className="text-emerald-400">Timer</span>
+                  <span className="text-emerald-300 font-mono font-black text-sm ml-1">04:31</span>
+                </div>
+              </div>
+
+              {/* ACTION BAR: Refresh, Result, History, Cancel, Advance, 3D Game, Lucky-12 */}
+              <div className="p-2 rounded-2xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-xl grid grid-cols-4 sm:grid-cols-7 gap-1.5 shadow-xl">
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    refreshData();
+                    addToast('Refreshed', '2D Game grid refreshed.', 'info');
+                  }}
+                  className="py-2 px-2 rounded-xl bg-purple-950/80 hover:bg-purple-900/80 text-purple-300 border border-purple-500/30 text-xs font-black transition-all flex items-center justify-center gap-1"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  <span>Refresh</span>
+                </button>
 
                 <button
-                  onClick={() => select2DFilter('even')}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all"
+                  onClick={() => {
+                    soundManager.playClick();
+                    setCurrentPage('live_lucky12');
+                  }}
+                  className="py-2 px-2 rounded-xl bg-purple-950/80 hover:bg-purple-900/80 text-purple-300 border border-purple-500/30 text-xs font-black transition-all flex items-center justify-center gap-1"
                 >
-                  Even Numbers
-                </button>
-                <button
-                  onClick={() => select2DFilter('odd')}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all"
-                >
-                  Odd Numbers
-                </button>
-                <button
-                  onClick={() => select2DFilter('small')}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all"
-                >
-                  Small (00-49)
-                </button>
-                <button
-                  onClick={() => select2DFilter('big')}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all"
-                >
-                  Big (50-99)
-                </button>
-                <button
-                  onClick={() => select2DFilter('random5')}
-                  className="px-3 py-1.5 rounded-xl bg-cyan-950/60 text-cyan-300 border border-cyan-500/30 text-xs font-bold transition-all"
-                >
-                  Random 5
-                </button>
-                <button
-                  onClick={() => select2DFilter('random10')}
-                  className="px-3 py-1.5 rounded-xl bg-cyan-950/60 text-cyan-300 border border-cyan-500/30 text-xs font-bold transition-all"
-                >
-                  Random 10
+                  <Trophy className="w-3 h-3" />
+                  <span>Result</span>
                 </button>
 
-                {/* Range Selection Dropdown */}
-                <select
-                  value={active2DRange}
-                  onChange={(e) => setActive2DRange(e.target.value)}
-                  className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-bold text-slate-300 focus:outline-none focus:border-cyan-500 ml-auto"
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setShowHistoryModal(true);
+                  }}
+                  className="py-2 px-2 rounded-xl bg-purple-950/80 hover:bg-purple-900/80 text-purple-300 border border-purple-500/30 text-xs font-black transition-all flex items-center justify-center gap-1"
                 >
-                  <option value="all">All Ranges (00-99)</option>
-                  <option value="00-19">Range 00 - 19</option>
-                  <option value="20-39">Range 20 - 39</option>
-                  <option value="40-59">Range 40 - 59</option>
-                  <option value="60-79">Range 60 - 79</option>
-                  <option value="80-99">Range 80 - 99</option>
-                </select>
+                  <History className="w-3 h-3" />
+                  <span>History</span>
+                </button>
 
                 <button
-                  onClick={() => select2DFilter('clear')}
-                  className="px-3 py-1.5 rounded-xl bg-rose-950/60 text-rose-300 border border-rose-800/60 text-xs font-bold transition-all"
+                  onClick={() => {
+                    soundManager.playClick();
+                    setSelected2DNumbers([]);
+                    setBoRowValues({});
+                    addToast('Selection Cleared', 'All 2D bet choices reset.', 'info');
+                  }}
+                  className="py-2 px-2 rounded-xl bg-purple-950/80 hover:bg-purple-900/80 text-purple-300 border border-purple-500/30 text-xs font-black transition-all flex items-center justify-center gap-1"
                 >
-                  Clear
+                  <X className="w-3 h-3" />
+                  <span>Cancel</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    addToast('Advance Draw', 'Selected upcoming advance 2D draw slots.', 'info');
+                  }}
+                  className="py-2 px-2 rounded-xl bg-purple-950/80 hover:bg-purple-900/80 text-purple-300 border border-purple-500/30 text-xs font-black transition-all flex items-center justify-center gap-1"
+                >
+                  <Zap className="w-3 h-3" />
+                  <span>Advance</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setActiveTab('3d');
+                  }}
+                  className="py-2 px-2 rounded-xl bg-cyan-950/90 hover:bg-cyan-900/90 text-cyan-300 border border-cyan-500/40 text-xs font-black transition-all flex items-center justify-center gap-1"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  <span>3D Game</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setActiveTab('lucky12');
+                  }}
+                  className="py-2 px-2 rounded-xl bg-emerald-950/90 hover:bg-emerald-900/90 text-emerald-300 border border-emerald-500/40 text-xs font-black transition-all flex items-center justify-center gap-1 col-span-2 sm:col-span-1"
+                >
+                  <Dices className="w-3 h-3" />
+                  <span>L-12</span>
                 </button>
               </div>
 
-              {/* Responsive 2D Number Grid */}
-              <div className="p-5 rounded-3xl bg-slate-900/90 border border-slate-800 backdrop-blur-2xl shadow-2xl">
-                <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2 max-h-[420px] overflow-y-auto p-2 bg-slate-950/80 rounded-2xl border border-slate-800 custom-scrollbar">
-                  {filtered2DNumbers.map((numStr) => {
-                    const isSelected = selected2DNumbers.includes(numStr);
+              {/* QUICK FILTER BAR: All, 10-19, 30-39, 50-59, EVEN, ODD, CP, FP */}
+              <div className="p-2 rounded-2xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-xl flex flex-wrap items-center justify-between gap-2 shadow-xl">
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setQuickFilter2D('All');
+                    setSelected2DNumbers([]);
+                  }}
+                  className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all ${
+                    quickFilter2D === 'All'
+                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  All
+                </button>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {['10-19', '30-39', '50-59', 'EVEN', 'ODD', 'CP', 'FP'].map((flt) => {
+                    const isActive = quickFilter2D === flt;
                     return (
-                      <motion.button
-                        key={numStr}
-                        whileHover={{ scale: 1.08 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => toggle2DNumber(numStr)}
-                        className={`h-11 rounded-2xl font-mono text-sm font-black transition-all flex items-center justify-center ${
+                      <label
+                        key={flt}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-xs font-black cursor-pointer transition-all ${
+                          isActive
+                            ? 'bg-purple-950 border-purple-400 text-purple-200'
+                            : 'bg-slate-950/80 border-slate-800 text-slate-300 hover:border-slate-700'
+                        }`}
+                        onClick={() => {
+                          soundManager.playClick();
+                          setQuickFilter2D(flt);
+                          const base = parseInt(selected2DRangeBlock.split('-')[0], 10) || 5000;
+                          let nums: string[] = [];
+                          if (flt === '10-19') {
+                            nums = Array.from({ length: 10 }, (_, i) => (base + 10 + i).toString());
+                          } else if (flt === '30-39') {
+                            nums = Array.from({ length: 10 }, (_, i) => (base + 30 + i).toString());
+                          } else if (flt === '50-59') {
+                            nums = Array.from({ length: 10 }, (_, i) => (base + 50 + i).toString());
+                          } else if (flt === 'EVEN') {
+                            nums = Array.from({ length: 100 }, (_, i) => base + i).filter((n) => n % 2 === 0).map(String);
+                          } else if (flt === 'ODD') {
+                            nums = Array.from({ length: 100 }, (_, i) => base + i).filter((n) => n % 2 !== 0).map(String);
+                          } else if (flt === 'CP' || flt === 'FP') {
+                            nums = Array.from({ length: 10 }, (_, i) => (base + i * 11).toString());
+                          }
+                          setSelected2DNumbers(nums);
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isActive}
+                          readOnly
+                          className="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-purple-500 focus:ring-0"
+                        />
+                        <span>{flt}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* MAIN SECTION: LEFT RANGE BLOCK SIDEBAR + NUMBER GRID TABLE */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                
+                {/* LEFT SIDEBAR: SELECTABLE RANGE BLOCKS */}
+                <div className="md:col-span-3 lg:col-span-2 space-y-1.5 p-2 rounded-2xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-xl shadow-xl">
+                  <div className="text-[11px] font-black uppercase text-purple-400 tracking-wider px-2 py-1 flex items-center justify-between border-b border-slate-800/80 mb-1">
+                    <span>Range Blocks</span>
+                    <Layers className="w-3.5 h-3.5" />
+                  </div>
+
+                  {[
+                    '5000-5099',
+                    '5100-5199',
+                    '5200-5299',
+                    '5300-5399',
+                    '5400-5499',
+                    '5500-5599',
+                    '5600-5699',
+                    '5700-5799',
+                    '5800-5899',
+                    '5900-5999',
+                  ].map((rangeStr) => {
+                    const isSelected = selected2DRangeBlock === rangeStr;
+                    return (
+                      <button
+                        key={rangeStr}
+                        onClick={() => {
+                          soundManager.playClick();
+                          setSelected2DRangeBlock(rangeStr);
+                          setSelected2DNumbers([]);
+                        }}
+                        className={`w-full py-2 px-2.5 rounded-xl text-xs font-mono font-bold flex items-center gap-2 border transition-all ${
                           isSelected
-                            ? 'bg-gradient-to-tr from-cyan-500 via-blue-600 to-purple-600 text-white shadow-[0_0_18px_rgba(14,165,233,0.4)] border border-cyan-300'
-                            : 'bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800'
+                            ? 'bg-gradient-to-r from-purple-900 to-indigo-900 border-purple-400 text-white shadow-lg shadow-purple-900/40'
+                            : 'bg-slate-950/80 border-slate-800/80 text-slate-300 hover:bg-slate-800/60'
                         }`}
                       >
-                        {numStr}
-                      </motion.button>
+                        <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
+                          isSelected ? 'bg-amber-400 border-amber-300 text-slate-950' : 'border-slate-700 bg-slate-900'
+                        }`}>
+                          {isSelected && <CheckCircle2 className="w-3 h-3" />}
+                        </div>
+                        <span>{rangeStr}</span>
+                      </button>
                     );
                   })}
                 </div>
 
-                {/* 2D Bottom Summary & Place Bet */}
-                <div className="mt-5 p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <span className="text-xs text-slate-400 font-bold block">
-                      Selected Numbers: <strong className="text-cyan-400 font-bold">{selected2DNumbers.length}</strong>
-                    </span>
-                    <span className="text-xl font-black text-emerald-400 font-mono">
-                      Total Wager: ₹{(betAmount * selected2DNumbers.length).toLocaleString()}
-                    </span>
-                  </div>
+                {/* RIGHT: RESPONSIVE NUMBER GRID TABLE */}
+                <div className="md:col-span-9 lg:col-span-10 p-3 rounded-2xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-2xl shadow-2xl overflow-x-auto custom-scrollbar">
+                  {(() => {
+                    const base2D = parseInt(selected2DRangeBlock.split('-')[0], 10) || 5000;
+                    const rows = ['F0', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9'];
 
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2">
-                      <span className="text-xs text-slate-400 font-bold">Bet/Number: ₹</span>
-                      <input
-                        type="number"
-                        value={betAmount}
-                        onChange={(e) => setBetAmount(Math.max(1, parseInt(e.target.value) || 0))}
-                        className="w-20 bg-transparent text-xs font-mono font-bold text-cyan-300 focus:outline-none"
-                      />
-                    </div>
+                    return (
+                      <table className="w-full text-center text-xs font-mono border-collapse min-w-[700px]">
+                        <thead>
+                          <tr className="border-b border-slate-800 text-slate-400 font-extrabold text-[11px] uppercase">
+                            <th className="py-2 px-1 text-purple-400">BLOCK</th>
+                            <th className="py-2 px-1 text-slate-300">BO</th>
+                            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((colIdx) => (
+                              <th key={`col-head-${colIdx}`} className="py-2 px-1 text-amber-300">
+                                {colIdx}
+                              </th>
+                            ))}
+                            <th className="py-2 px-1 text-purple-300">C</th>
+                            <th className="py-2 px-1 text-purple-300">F</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/60">
+                          {rows.map((rowKey, rowIdx) => {
+                            const rowStartNum = base2D + rowIdx * 10;
+                            const rowNums = Array.from({ length: 10 }, (_, i) => (rowStartNum + i).toString());
+                            const selectedCountInRow = rowNums.filter((n) => selected2DNumbers.includes(n)).length;
+                            const boValue = boRowValues[rowKey] || '';
 
-                    <motion.button
-                      whileHover={{ scale: 1.04 }}
-                      whileTap={{ scale: 0.96 }}
-                      onClick={handlePlaceBet}
-                      className="px-6 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-cyan-600 text-slate-950 font-black text-sm uppercase tracking-wider shadow-[0_0_25px_rgba(14,165,233,0.4)] hover:shadow-[0_0_35px_rgba(14,165,233,0.6)] transition-all flex items-center gap-2"
-                    >
-                      <Ticket className="w-5 h-5" />
-                      <span>PLACE 2D BET</span>
-                    </motion.button>
-                  </div>
+                            return (
+                              <tr key={rowKey} className="hover:bg-slate-800/30 transition-colors">
+                                {/* Block Label e.g. F0, F1 */}
+                                <td className="py-1.5 px-1 font-black text-amber-400 text-xs">
+                                  {rowKey}
+                                </td>
+
+                                {/* BO Quantity Input Box */}
+                                <td className="py-1.5 px-1">
+                                  <input
+                                    type="number"
+                                    placeholder=""
+                                    value={boValue}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setBoRowValues((prev) => ({ ...prev, [rowKey]: val }));
+                                      if (val && parseInt(val, 10) > 0) {
+                                        // Auto select all 10 numbers in this row
+                                        setSelected2DNumbers((prev) => Array.from(new Set([...prev, ...rowNums])));
+                                      } else if (!val) {
+                                        // Deselect numbers in this row if cleared
+                                        setSelected2DNumbers((prev) => prev.filter((n) => !rowNums.includes(n)));
+                                      }
+                                    }}
+                                    className="w-10 h-7 bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-md text-center text-xs font-bold text-amber-300 focus:outline-none"
+                                  />
+                                </td>
+
+                                {/* 10 Number Cells */}
+                                {rowNums.map((numStr) => {
+                                  const isSelected = selected2DNumbers.includes(numStr);
+                                  return (
+                                    <td key={numStr} className="py-1.5 px-1">
+                                      <button
+                                        onClick={() => toggle2DNumber(numStr)}
+                                        className={`w-full py-1.5 px-1 rounded-lg font-mono font-extrabold text-xs transition-all border ${
+                                          isSelected
+                                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-amber-300 shadow-md shadow-purple-900/50 scale-105'
+                                            : 'bg-slate-950/80 hover:bg-slate-800 text-slate-200 border-slate-800/80'
+                                        }`}
+                                      >
+                                        {numStr}
+                                      </button>
+                                    </td>
+                                  );
+                                })}
+
+                                {/* C Column: Count of selected numbers in row */}
+                                <td className="py-1.5 px-1 font-black text-purple-400 bg-purple-950/30">
+                                  {selectedCountInRow}
+                                </td>
+
+                                {/* F Column: Total Front Count / BO */}
+                                <td className="py-1.5 px-1 font-black text-purple-400 bg-purple-950/30">
+                                  {boValue ? parseInt(boValue, 10) * 10 : selectedCountInRow * 10}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    );
+                  })()}
                 </div>
+
+              </div>
+
+              {/* BOTTOM BAR: LOGOUT, CHANGE PASSWORD, FREE BUY, BUY NOW */}
+              <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xl">
+                
+                {/* Logout Button */}
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => {
+                    soundManager.playClick();
+                    setCurrentPage('dashboard');
+                  }}
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-rose-700 to-red-800 hover:from-rose-600 hover:to-red-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 border border-rose-600/40 shadow-lg shadow-rose-900/30"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </motion.button>
+
+                {/* Change Password Button */}
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => {
+                    soundManager.playClick();
+                    setCurrentPage('profile');
+                  }}
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-800 to-indigo-900 hover:from-purple-700 hover:to-indigo-800 text-white font-extrabold text-xs flex items-center justify-center gap-2 border border-purple-500/40 shadow-lg shadow-purple-900/30"
+                >
+                  <KeyRound className="w-4 h-4" />
+                  <span>C-Password</span>
+                </motion.button>
+
+                {/* Free Buy Central Button */}
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => {
+                    soundManager.playClick();
+                    if (selected2DNumbers.length === 0) {
+                      const base = parseInt(selected2DRangeBlock.split('-')[0], 10) || 5000;
+                      const rand = (base + Math.floor(Math.random() * 100)).toString();
+                      setSelected2DNumbers([rand]);
+                      addToast('Free Buy Activated!', `Selected random number ${rand} with free points!`, 'success');
+                    } else {
+                      handlePlaceBet();
+                    }
+                  }}
+                  className="w-full sm:flex-1 py-2.5 px-8 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 border border-emerald-400/40 shadow-lg shadow-emerald-500/30"
+                >
+                  <Gift className="w-4 h-4" />
+                  <span>Free Buy</span>
+                </motion.button>
+
+                {/* BUY NOW Button */}
+                <motion.button
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={handlePlaceBet}
+                  className="w-full sm:w-auto px-8 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/30 shrink-0"
+                >
+                  <Ticket className="w-4 h-4" />
+                  <span>BUY NOW (₹{(betAmount * Math.max(1, selected2DNumbers.length)).toLocaleString()})</span>
+                </motion.button>
 
               </div>
 
