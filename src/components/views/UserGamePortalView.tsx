@@ -25,6 +25,8 @@ import {
   Info,
   ChevronRight,
   Filter,
+  LogOut,
+  Gift,
 } from 'lucide-react';
 
 export const UserGamePortalView: React.FC = () => {
@@ -277,73 +279,126 @@ export const UserGamePortalView: React.FC = () => {
         >
           {/* ===================== GAME 1: LUCKY-12 ===================== */}
           {activeTab === 'lucky12' && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               
-              {/* Lucky 12 Info Bar */}
-              <div className="p-4 sm:p-5 rounded-3xl bg-slate-900/80 border border-amber-500/30 backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[0_0_30px_rgba(245,158,11,0.1)]">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Flame className="w-5 h-5 text-amber-400 animate-pulse" />
-                    <h2 className="text-base sm:text-lg font-black text-white tracking-wide">LUCKY-12 ARENA</h2>
-                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold">
-                      10x WIN
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Select 1 or more lucky cards below. Enter wager amount and click <strong className="text-amber-400">BUY NOW</strong> to confirm.
-                  </p>
+              {/* Top Title & Quick Navigation Header */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900/90 via-slate-900/95 to-slate-900/90 border border-slate-800/80 backdrop-blur-2xl flex flex-col md:flex-row items-center justify-between gap-3 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent blur-xs opacity-70" />
+                
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl animate-bounce">👑</span>
+                  <h1 className="text-2xl sm:text-3xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)] uppercase">
+                    LUCKY-12
+                  </h1>
+                  <span className="text-2xl animate-bounce">👑</span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
-                      const allNames = lucky12Cards.map((c) => c.name);
-                      setSelectedCards(allNames);
                       soundManager.playClick();
+                      setActiveTab('3d');
                     }}
-                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all border border-slate-700"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-950/80 hover:bg-slate-800 text-cyan-400 border border-cyan-500/30 text-xs font-bold transition-all hover:scale-105"
                   >
-                    Select All 12
+                    <Sparkles className="w-4 h-4" />
+                    <span>3D Game</span>
                   </button>
                   <button
-                    onClick={handleClearLucky12}
-                    className="px-3 py-1.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-800/60 text-xs font-bold transition-all"
+                    onClick={() => {
+                      soundManager.playClick();
+                      setActiveTab('2d');
+                    }}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-950/80 hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all hover:scale-105"
                   >
-                    Clear All
+                    <Dices className="w-4 h-4" />
+                    <span>2D Game</span>
                   </button>
                 </div>
               </div>
 
-              {/* 12 Cards Responsive Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {lucky12Cards.map((card) => {
+              {/* Action Control Button Bar */}
+              <div className="p-2.5 rounded-2xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-xl grid grid-cols-5 gap-2 shadow-xl">
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    refreshData();
+                    addToast('Data Refreshed', 'Game arena data re-synchronized.', 'info');
+                  }}
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 text-cyan-400 border border-cyan-500/30 text-xs font-extrabold transition-all hover:text-white"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: '8s' }} />
+                  <span>Refresh</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setCurrentPage('live_lucky12');
+                  }}
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl bg-purple-950/70 hover:bg-purple-900/70 text-purple-300 border border-purple-500/40 text-xs font-extrabold transition-all"
+                >
+                  <Trophy className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Result</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setShowHistoryModal(true);
+                  }}
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl bg-indigo-950/70 hover:bg-indigo-900/70 text-indigo-300 border border-indigo-500/40 text-xs font-extrabold transition-all"
+                >
+                  <History className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>History</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    addToast('Advance Draw', 'Select upcoming draw rounds for advance bets.', 'info');
+                  }}
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl bg-emerald-950/70 hover:bg-emerald-900/70 text-emerald-300 border border-emerald-500/40 text-xs font-extrabold transition-all"
+                >
+                  <Zap className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Advance</span>
+                </button>
+
+                <button
+                  onClick={handleClearLucky12}
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl bg-rose-950/80 hover:bg-rose-900/80 text-rose-300 border border-rose-500/40 text-xs font-extrabold transition-all"
+                >
+                  <X className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Cancel</span>
+                </button>
+              </div>
+
+              {/* 12 Cards Grid - 6 columns on desktop, 3 on tablet, 2 on mobile */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                {lucky12Cards.map((card, idx) => {
                   const isSelected = selectedCards.includes(card.name);
-                  const currentCardBet = cardBets[card.name] || betAmount;
+                  const currentCardBet = cardBets[card.name] || '';
+
+                  // Fallback icons / illustration graphics for the 12 cards
+                  const cardGraphics = [
+                    '⚽', '🪁', '🐱', '🐎', '☂️', '🏍️', '🦋', '🌹', '🐅', '🪔', '🕊️', '🐇'
+                  ];
+                  const fallbackGraphic = cardGraphics[idx % 12];
 
                   return (
                     <motion.div
-                      key={card.id}
-                      whileHover={{ scale: 1.04, y: -4 }}
+                      key={card.id || `card-${idx}`}
+                      whileHover={{ scale: 1.03, y: -2 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => toggleLuckyCard(card.name)}
-                      className={`relative rounded-3xl p-4 border transition-all cursor-pointer flex flex-col justify-between gap-3 backdrop-blur-xl ${
+                      className={`relative rounded-2xl p-3 border transition-all cursor-pointer flex flex-col justify-between gap-2.5 backdrop-blur-xl ${
                         isSelected
-                          ? 'bg-gradient-to-b from-slate-900 via-slate-900 to-amber-950/90 border-amber-400 shadow-[0_0_25px_rgba(245,158,11,0.35)] ring-2 ring-amber-400/60'
-                          : 'bg-slate-900/70 border-slate-800 hover:border-amber-500/40 hover:bg-slate-800/80 text-slate-300'
+                          ? 'bg-gradient-to-b from-slate-900 via-slate-900 to-purple-950/90 border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.35)] ring-2 ring-amber-400/50'
+                          : 'bg-slate-900/80 border-slate-800 hover:border-slate-700 hover:bg-slate-800/80'
                       }`}
                     >
-                      {/* Top Card Badge */}
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs font-black text-amber-400 bg-slate-950/80 px-2.5 py-1 rounded-xl border border-slate-800">
-                          #{card.cardNo.toString().padStart(2, '0')}
-                        </span>
-                        <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                          {card.multiplier}
-                        </span>
-                      </div>
-
-                      {/* Card Image / Icon */}
-                      <div className="w-full h-24 rounded-2xl bg-slate-950/90 border border-slate-800 flex items-center justify-center p-2 relative overflow-hidden group shadow-inner">
+                      {/* Card Illustration Container */}
+                      <div className="w-full h-28 sm:h-32 rounded-xl bg-slate-950/90 border border-slate-800/80 flex flex-col items-center justify-center p-2 relative overflow-hidden group shadow-inner">
                         {isSelected && (
                           <div className="absolute inset-0 bg-amber-500/10 backdrop-blur-[1px] animate-pulse" />
                         )}
@@ -351,127 +406,127 @@ export const UserGamePortalView: React.FC = () => {
                           <img
                             src={card.imageUrl}
                             alt={card.name}
-                            className="w-full h-full object-contain drop-shadow-[0_5px_15px_rgba(0,0,0,0.8)] transition-transform duration-300 group-hover:scale-110"
+                            className="w-full h-full object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] transition-transform duration-300 group-hover:scale-110"
                             onError={(e) => {
                               (e.target as HTMLImageElement).style.display = 'none';
                               const parent = (e.target as HTMLImageElement).parentElement;
-                              if (parent && !parent.querySelector('.fallback-card-icon')) {
-                                const fallback = document.createElement('span');
-                                fallback.className = 'fallback-card-icon text-5xl';
-                                fallback.innerText = card.icon || '👑';
-                                parent.appendChild(fallback);
+                              if (parent && !parent.querySelector('.fallback-icon')) {
+                                const el = document.createElement('span');
+                                el.className = 'fallback-icon text-5xl';
+                                el.innerText = fallbackGraphic;
+                                parent.appendChild(el);
                               }
                             }}
                           />
                         ) : (
-                          <span className="text-5xl">{card.icon}</span>
+                          <span className="text-5xl">{fallbackGraphic}</span>
                         )}
                       </div>
 
-                      {/* Card Title */}
-                      <div className="text-center">
-                        <h4 className="text-xs font-black text-white tracking-wide flex items-center justify-center gap-1">
-                          <span>{card.icon}</span>
-                          <span>{card.name}</span>
-                        </h4>
-                      </div>
+                      {/* Manual Amount Input Field */}
+                      <div onClick={(e) => e.stopPropagation()} className="space-y-1.5">
+                        <input
+                          type="number"
+                          placeholder="Enter Amount"
+                          value={currentCardBet}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            setCardBetAmount(card.name, val);
+                            if (val > 0 && !selectedCards.includes(card.name)) {
+                              setSelectedCards((prev) => [...prev, card.name]);
+                            } else if (val <= 0 && selectedCards.includes(card.name)) {
+                              setSelectedCards((prev) => prev.filter((c) => c !== card.name));
+                            }
+                          }}
+                          className="w-full bg-slate-950/90 border border-slate-800 focus:border-amber-400 rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-center text-amber-300 placeholder-slate-500 focus:outline-none transition-all"
+                        />
 
-                      {/* Bet Input per Card */}
-                      <div
-                        onClick={(e) => e.stopPropagation()}
-                        className="space-y-1.5"
-                      >
-                        <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1">
-                          <span className="text-[10px] text-slate-500 font-bold">₹</span>
-                          <input
-                            type="number"
-                            value={currentCardBet}
-                            onChange={(e) => {
-                              const val = Math.max(1, parseInt(e.target.value) || 0);
-                              setCardBetAmount(card.name, val);
-                              if (!selectedCards.includes(card.name)) {
-                                setSelectedCards((prev) => [...prev, card.name]);
-                              }
-                            }}
-                            className="w-full bg-transparent text-xs font-mono font-black text-amber-300 focus:outline-none text-center"
-                            placeholder="Bet ₹"
-                          />
-                        </div>
-
-                        <div
-                          className={`w-full py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider text-center transition-all flex items-center justify-center gap-1 ${
+                        {/* BET Button */}
+                        <button
+                          onClick={() => {
+                            toggleLuckyCard(card.name);
+                          }}
+                          className={`w-full py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1 shadow-md ${
                             isSelected
-                              ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-400/30'
-                              : 'bg-slate-800 text-slate-400 group-hover:text-white'
+                              ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-amber-500/30'
+                              : 'bg-gradient-to-r from-purple-800 to-indigo-900 hover:from-purple-700 hover:to-indigo-800 text-white'
                           }`}
                         >
                           {isSelected ? (
                             <>
                               <CheckCircle2 className="w-3.5 h-3.5" />
-                              <span>Selected</span>
+                              <span>SELECTED</span>
                             </>
                           ) : (
-                            <span>Tap to Select</span>
+                            <span>BET</span>
                           )}
-                        </div>
+                        </button>
                       </div>
                     </motion.div>
                   );
                 })}
               </div>
 
-              {/* Lucky 12 Bottom Action Controls Bar: Buy Button, Cancel Button, History Button */}
-              <div className="p-5 rounded-3xl bg-slate-900/90 border border-slate-800 backdrop-blur-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xl">
-                <div>
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                    Total Wager Summary
+              {/* Bottom Action Footer Bar: Exit Button, Last Transaction Amount, Free Buy */}
+              <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xl">
+                
+                {/* Exit Button */}
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => {
+                    soundManager.playClick();
+                    setCurrentPage('dashboard');
+                  }}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-700 to-red-800 hover:from-rose-600 hover:to-red-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 border border-rose-600/40 shadow-lg shadow-rose-900/30"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Exit</span>
+                </motion.button>
+
+                {/* Last Transaction Amount Box */}
+                <div className="px-5 py-2 rounded-xl bg-slate-950/90 border border-slate-800 flex items-center gap-2 font-mono text-xs text-slate-300 font-bold">
+                  <span className="text-slate-400">Last Trsn Amount ( ₹ )</span>
+                  <span className="text-amber-400 font-extrabold text-sm">
+                    {selectedCards.length > 0
+                      ? selectedCards.reduce((sum, name) => sum + (cardBets[name] || 0), 0).toFixed(2)
+                      : '0.00'}
                   </span>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="text-sm text-slate-300 font-medium">
-                      Selected: <strong className="text-amber-400 font-bold">{selectedCards.length} Cards</strong>
-                    </span>
-                    <span className="text-xl font-black text-emerald-400 font-mono">
-                      ₹{selectedCards.reduce((sum, name) => sum + (cardBets[name] || betAmount), 0).toLocaleString()}
-                    </span>
-                  </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  {/* Cancel Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={handleClearLucky12}
-                    className="px-4 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all border border-slate-700"
-                  >
-                    Cancel Selection
-                  </motion.button>
-
-                  {/* History Button */}
+                {/* Free Buy & Place Bet Buttons */}
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   <motion.button
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => {
                       soundManager.playClick();
-                      setShowHistoryModal(true);
+                      if (selectedCards.length === 0) {
+                        const randomCard = lucky12Cards[Math.floor(Math.random() * lucky12Cards.length)];
+                        setSelectedCards([randomCard.name]);
+                        setCardBetAmount(randomCard.name, 10);
+                        addToast('Free Buy Activated', `Selected ${randomCard.name} with free bonus credits!`, 'success');
+                      } else {
+                        handlePlaceBet();
+                      }
                     }}
-                    className="px-4 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-bold transition-all border border-cyan-500/30 flex items-center gap-1.5"
+                    className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 border border-emerald-400/40 shadow-lg shadow-emerald-500/30"
                   >
-                    <History className="w-4 h-4" />
-                    <span>Bet History</span>
+                    <Gift className="w-4 h-4" />
+                    <span>FREE BUY</span>
                   </motion.button>
 
-                  {/* Buy Button */}
                   <motion.button
                     whileHover={{ scale: 1.04 }}
                     whileTap={{ scale: 0.96 }}
                     onClick={handlePlaceBet}
-                    className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-slate-950 font-black text-sm uppercase tracking-wider shadow-[0_0_25px_rgba(245,158,11,0.4)] hover:shadow-[0_0_35px_rgba(245,158,11,0.6)] transition-all flex items-center gap-2"
+                    className="flex-1 sm:flex-initial px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/30"
                   >
-                    <Ticket className="w-5 h-5" />
+                    <Ticket className="w-4 h-4" />
                     <span>BUY NOW</span>
                   </motion.button>
                 </div>
+
               </div>
 
             </div>
