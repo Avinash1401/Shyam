@@ -2,6 +2,9 @@ import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AdminProvider, useAdmin } from './context/AdminContext';
 
+// Opening / Home Page
+import { OpeningHomePage } from './components/views/OpeningHomePage';
+
 // Authentication Pages
 import { PlayerLoginPage } from './components/auth/PlayerLoginPage';
 import { PlayerRegisterPage } from './components/auth/PlayerRegisterPage';
@@ -11,8 +14,8 @@ import { AdminLoginPage } from './components/auth/AdminLoginPage';
 import { AdminLayout } from './components/layout/AdminLayout';
 import { PlayerLayout } from './components/layout/PlayerLayout';
 
-function RoleBasedRootRedirect() {
-  const { isLoggedIn, userRole, isAuthLoading } = useAdmin();
+function HomeOrRedirect() {
+  const { isAuthLoading } = useAdmin();
 
   if (isAuthLoading) {
     return (
@@ -22,28 +25,22 @@ function RoleBasedRootRedirect() {
     );
   }
 
-  if (isLoggedIn) {
-    if (userRole === 'admin') {
-      return <Navigate to="/admin/dashboard" replace />;
-    }
-    return <Navigate to="/player/dashboard" replace />;
-  }
-
-  // Default redirect for unauthenticated visitors
-  return <Navigate to="/player/login" replace />;
+  // Always show the Opening Home Page for visitors at /
+  return <OpeningHomePage />;
 }
 
 export default function App() {
   useEffect(() => {
-    document.title = 'Shyam111';
+    document.title = 'SHYAM111 GAME';
   }, []);
 
   return (
     <BrowserRouter>
       <AdminProvider>
         <Routes>
-          {/* Default root redirects based on role */}
-          <Route path="/" element={<RoleBasedRootRedirect />} />
+          {/* Main Opening Home Page */}
+          <Route path="/" element={<HomeOrRedirect />} />
+          <Route path="/home" element={<OpeningHomePage />} />
 
           {/* Player Dedicated Routes */}
           <Route path="/player/login" element={<PlayerLoginPage />} />
@@ -57,9 +54,10 @@ export default function App() {
           <Route path="/admin/*" element={<AdminLayout />} />
 
           {/* Catch-all route */}
-          <Route path="*" element={<RoleBasedRootRedirect />} />
+          <Route path="*" element={<HomeOrRedirect />} />
         </Routes>
       </AdminProvider>
     </BrowserRouter>
   );
 }
+

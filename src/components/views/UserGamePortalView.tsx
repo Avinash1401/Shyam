@@ -359,6 +359,143 @@ export const UserGamePortalView: React.FC = () => {
 
 
       
+      {/* OPENING HOME SCREEN MAIN MENU (LARGE GREEN GRADIENT GLASSMORPHISM BUTTONS) */}
+      <div className="max-w-4xl mx-auto space-y-3.5 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {/* BUTTON 1: PLAY FREE */}
+          <motion.button
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => {
+              soundManager.playClick();
+              setActiveTab('lucky12');
+            }}
+            className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-700 via-green-600 to-emerald-600 hover:from-emerald-600 hover:to-green-500 border-2 border-emerald-400/80 hover:border-cyan-300 text-white font-black text-base uppercase tracking-wider flex items-center justify-between shadow-[0_10px_30px_rgba(16,185,129,0.3)] transition-all group cursor-pointer relative overflow-hidden"
+          >
+            <div className="flex items-center gap-3 z-10">
+              <div className="p-2 rounded-xl bg-slate-950/50 border border-white/20 text-amber-300 group-hover:scale-110 transition-transform">
+                <Play className="w-5 h-5 fill-amber-300 animate-pulse" />
+              </div>
+              <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans">PLAY FREE</span>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-amber-300 bg-slate-950/70 px-2.5 py-1 rounded-full border border-amber-400/40 z-10">
+              FREE DEMO
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+          </motion.button>
+
+          {/* BUTTON 2: SHYAM111 2D */}
+          <motion.button
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => {
+              soundManager.playClick();
+              setActiveTab('2d');
+            }}
+            className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-700 via-green-600 to-emerald-600 hover:from-emerald-600 hover:to-green-500 border-2 border-emerald-400/80 hover:border-cyan-300 text-white font-black text-base uppercase tracking-wider flex items-center justify-between shadow-[0_10px_30px_rgba(16,185,129,0.3)] transition-all group cursor-pointer relative overflow-hidden"
+          >
+            <div className="flex items-center gap-3 z-10">
+              <div className="p-2 rounded-xl bg-slate-950/50 border border-white/20 text-cyan-300 group-hover:scale-110 transition-transform">
+                <Dices className="w-5 h-5" />
+              </div>
+              <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans">SHYAM111 2D</span>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-cyan-300 bg-slate-950/70 px-2.5 py-1 rounded-full border border-cyan-400/40 z-10">
+              90x PAYOUT
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+          </motion.button>
+
+          {/* BUTTON 3: SHYAM111 3D */}
+          <motion.button
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => {
+              soundManager.playClick();
+              setActiveTab('3d');
+            }}
+            className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-700 via-green-600 to-emerald-600 hover:from-emerald-600 hover:to-green-500 border-2 border-emerald-400/80 hover:border-cyan-300 text-white font-black text-base uppercase tracking-wider flex items-center justify-between shadow-[0_10px_30px_rgba(16,185,129,0.3)] transition-all group cursor-pointer relative overflow-hidden"
+          >
+            <div className="flex items-center gap-3 z-10">
+              <div className="p-2 rounded-xl bg-slate-950/50 border border-white/20 text-purple-300 group-hover:scale-110 transition-transform">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans">SHYAM111 3D</span>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-purple-300 bg-slate-950/70 px-2.5 py-1 rounded-full border border-purple-400/40 z-10">
+              900x PAYOUT
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+          </motion.button>
+
+          {/* BUTTON 4: SHYAM111 L-12 */}
+          <motion.button
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => {
+              soundManager.playClick();
+              setActiveTab('lucky12');
+            }}
+            className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-700 via-green-600 to-emerald-600 hover:from-emerald-600 hover:to-green-500 border-2 border-emerald-400/80 hover:border-cyan-300 text-white font-black text-base uppercase tracking-wider flex items-center justify-between shadow-[0_10px_30px_rgba(16,185,129,0.3)] transition-all group cursor-pointer relative overflow-hidden"
+          >
+            <div className="flex items-center gap-3 z-10">
+              <div className="p-2 rounded-xl bg-slate-950/50 border border-white/20 text-amber-300 group-hover:scale-110 transition-transform">
+                <Flame className="w-5 h-5" />
+              </div>
+              <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans">SHYAM111 L-12</span>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-amber-300 bg-slate-950/70 px-2.5 py-1 rounded-full border border-amber-400/40 z-10">
+              10x PAYOUT
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+          </motion.button>
+
+          {/* BUTTON 5: 2D RESULT CHART */}
+          <motion.button
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => {
+              soundManager.playClick();
+              setCurrentPage('live_2d');
+            }}
+            className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-700 via-green-600 to-emerald-600 hover:from-emerald-600 hover:to-green-500 border-2 border-emerald-400/80 hover:border-cyan-300 text-white font-black text-base uppercase tracking-wider flex items-center justify-between shadow-[0_10px_30px_rgba(16,185,129,0.3)] transition-all group cursor-pointer relative overflow-hidden"
+          >
+            <div className="flex items-center gap-3 z-10">
+              <div className="p-2 rounded-xl bg-slate-950/50 border border-white/20 text-teal-300 group-hover:scale-110 transition-transform">
+                <Calendar className="w-5 h-5" />
+              </div>
+              <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans">2D RESULT CHART</span>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-teal-300 bg-slate-950/70 px-2.5 py-1 rounded-full border border-teal-400/40 z-10">
+              HISTORY
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+          </motion.button>
+
+          {/* BUTTON 6: 3D RESULT CHART */}
+          <motion.button
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => {
+              soundManager.playClick();
+              setCurrentPage('live_3d');
+            }}
+            className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-700 via-green-600 to-emerald-600 hover:from-emerald-600 hover:to-green-500 border-2 border-emerald-400/80 hover:border-cyan-300 text-white font-black text-base uppercase tracking-wider flex items-center justify-between shadow-[0_10px_30px_rgba(16,185,129,0.3)] transition-all group cursor-pointer relative overflow-hidden"
+          >
+            <div className="flex items-center gap-3 z-10">
+              <div className="p-2 rounded-xl bg-slate-950/50 border border-white/20 text-rose-300 group-hover:scale-110 transition-transform">
+                <Trophy className="w-5 h-5" />
+              </div>
+              <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans">3D RESULT CHART</span>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-rose-300 bg-slate-950/70 px-2.5 py-1 rounded-full border border-rose-400/40 z-10">
+              ABC RESULTS
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+          </motion.button>
+        </div>
+      </div>
+
       {/* Game Mode Tab Selector with Framer Motion Glass Styling */}
       <div className="relative p-1.5 rounded-3xl bg-slate-900/90 border border-slate-800 backdrop-blur-2xl shadow-2xl flex items-center gap-2">
         {[
