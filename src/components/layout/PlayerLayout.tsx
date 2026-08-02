@@ -65,7 +65,7 @@ export const PlayerLayout: React.FC = () => {
 
   // Requirement: Protect every route using role-based authentication
   if (!isLoggedIn || userRole !== 'player') {
-    return <Navigate to="/player/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return (

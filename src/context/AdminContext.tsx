@@ -887,7 +887,13 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const logout = async () => {
-    await logoutAdmin();
+    await logoutFirestoreUser();
+    setUserRole(null);
+    setAdminSession({ isLoggedIn: false, user: null });
+    setPlayerSession({ isLoggedIn: false, user: null });
+    setIsLoggedIn(false);
+    setCurrentUser(null);
+    addToast('Logged Out', 'You have been logged out.', 'info');
   };
 
   // Deposit & Withdrawal Requests
