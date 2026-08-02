@@ -516,9 +516,9 @@ export const UserGamePortalView: React.FC = () => {
 
                   // Fallback icons / illustration graphics for the 12 cards
                   const cardGraphics = [
-                    '⚽', '🪁', '🐱', '🐎', '☂️', '🏍️', '🦋', '🌹', '🐅', '🪔', '🕊️', '🐇'
+                    '⚽', '🪁', '🐱', '🐎', '🏍️', '🦋', '🌹', '🐅', '🪔', '🐇', '☂️', '☀️'
                   ];
-                  const fallbackGraphic = cardGraphics[idx % 12];
+                  const fallbackGraphic = card.icon || cardGraphics[idx % 12];
 
                   return (
                     <motion.div
@@ -543,8 +543,16 @@ export const UserGamePortalView: React.FC = () => {
                             alt={card.name}
                             className="w-full h-full object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] transition-transform duration-300 group-hover:scale-110"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                              const parent = (e.target as HTMLImageElement).parentElement;
+                              const imgEl = e.target as HTMLImageElement;
+                              if (imgEl.src && !imgEl.dataset.retried) {
+                                imgEl.dataset.retried = 'true';
+                                if (imgEl.src.includes('/lucky12/')) {
+                                  imgEl.src = imgEl.src.replace('/lucky12/', '/public/lucky12/');
+                                  return;
+                                }
+                              }
+                              imgEl.style.display = 'none';
+                              const parent = imgEl.parentElement;
                               if (parent && !parent.querySelector('.fallback-icon')) {
                                 const el = document.createElement('span');
                                 el.className = 'fallback-icon text-5xl';

@@ -35,18 +35,18 @@ import {
 } from '../types';
 
 export const defaultLucky12Cards: Lucky12CardConfig[] = [
-  { id: 'l12-1', cardNo: 1, name: 'Golden Crown', icon: '👑', imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card1_crown.png', multiplier: '10x', status: 'active' },
-  { id: 'l12-2', cardNo: 2, name: 'Lucky Seven', icon: '7️⃣', imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card2_seven.png', multiplier: '10x', status: 'active' },
-  { id: 'l12-3', cardNo: 3, name: 'Royal Diamond', icon: '💎', imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card3_diamond.png', multiplier: '10x', status: 'active' },
-  { id: 'l12-4', cardNo: 4, name: 'Mystic Star', icon: '⭐', imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card4_star.png', multiplier: '10x', status: 'active' },
-  { id: 'l12-5', cardNo: 5, name: 'Golden Horseshoe', icon: '🧲', imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card5_horseshoe.png', multiplier: '10x', status: 'active' },
-  { id: 'l12-6', cardNo: 6, name: 'Dragon Fortune', icon: '🐉', imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card6_dragon.png', multiplier: '10x', status: 'active' },
-  { id: 'l12-7', cardNo: 7, name: 'Golden Lotus', icon: '🪷', imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card7_lotus.png', multiplier: '10x', status: 'active' },
-  { id: 'l12-8', cardNo: 8, name: 'Royal Eagle', icon: '🦅', imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card8_eagle.png', multiplier: '10x', status: 'active' },
-  { id: 'l12-9', cardNo: 9, name: 'Fire Phoenix', icon: '🔥', imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card9_phoenix.png', multiplier: '10x', status: 'active' },
-  { id: 'l12-10', cardNo: 10, name: 'Jade Lion', icon: '🦁', imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card10_lion.png', multiplier: '10x', status: 'active' },
-  { id: 'l12-11', cardNo: 11, name: 'Ace of Spades', icon: '♠️', imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card11_spade.png', multiplier: '10x', status: 'active' },
-  { id: 'l12-12', cardNo: 12, name: 'Sun God', icon: '☀️', imageUrl: 'https://raw.githubusercontent.com/avinashsaini1401/lucky12-assets/main/cards/card12_sungod.png', multiplier: '10x', status: 'active' },
+  { id: 'l12-1', cardNo: 1, name: 'Football', icon: '⚽', imageUrl: '/lucky12/football1111.gif', multiplier: '10x', status: 'active' },
+  { id: 'l12-2', cardNo: 2, name: 'Kite Work', icon: '🪁', imageUrl: '/lucky12/kitework123.gif', multiplier: '10x', status: 'active' },
+  { id: 'l12-3', cardNo: 3, name: 'Cat', icon: '🐱', imageUrl: '/lucky12/cat1212.gif', multiplier: '10x', status: 'active' },
+  { id: 'l12-4', cardNo: 4, name: 'Horse', icon: '🐎', imageUrl: '/lucky12/horse1.gif', multiplier: '10x', status: 'active' },
+  { id: 'l12-5', cardNo: 5, name: 'Bullet', icon: '🏍️', imageUrl: '/lucky12/bullet121.gif', multiplier: '10x', status: 'active' },
+  { id: 'l12-6', cardNo: 6, name: 'Butterfly', icon: '🦋', imageUrl: '/lucky12/butterfly121.gif', multiplier: '10x', status: 'active' },
+  { id: 'l12-7', cardNo: 7, name: 'Rose', icon: '🌹', imageUrl: '/lucky12/rose132 (1).gif', multiplier: '10x', status: 'active' },
+  { id: 'l12-8', cardNo: 8, name: 'Tiger', icon: '🐅', imageUrl: '/lucky12/tiger11.gif', multiplier: '10x', status: 'active' },
+  { id: 'l12-9', cardNo: 9, name: 'Dipak', icon: '🪔', imageUrl: '/lucky12/dipak1231.gif', multiplier: '10x', status: 'active' },
+  { id: 'l12-10', cardNo: 10, name: 'Rabbit', icon: '🐇', imageUrl: '/lucky12/rabit132.gif', multiplier: '10x', status: 'active' },
+  { id: 'l12-11', cardNo: 11, name: 'Umbrella', icon: '☂️', imageUrl: '/lucky12/umbrella11.gif', multiplier: '10x', status: 'active' },
+  { id: 'l12-12', cardNo: 12, name: 'Sun God', icon: '☀️', imageUrl: '/lucky12/football1111.gif', multiplier: '10x', status: 'active' },
 ];
 
 export const defaultGameControls: GameControlConfig[] = [
