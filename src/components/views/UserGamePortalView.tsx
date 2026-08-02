@@ -61,11 +61,15 @@ export const UserGamePortalView: React.FC = () => {
   const [cardBets, setCardBets] = useState<{ [cardName: string]: number }>({});
 
   // ------------------ 3D GAME STATE ------------------
-  const [betType3D, setBetType3D] = useState<'Straight' | 'Box' | 'Single' | 'Double' | 'Triple' | 'Pair' | 'Split'>('Straight');
-  const [digit1, setDigit1] = useState<number>(4);
+  const [betType3D, setBetType3D] = useState<string>('Box');
+  const [digit1, setDigit1] = useState<number>(5);
   const [digit2, setDigit2] = useState<number>(8);
-  const [digit3, setDigit3] = useState<number>(9);
-  const [selectedPanel, setSelectedPanel] = useState<'A' | 'B' | 'C' | 'ABC'>('ABC');
+  const [digit3, setDigit3] = useState<number>(1);
+  const [selectedPanel, setSelectedPanel] = useState<'All' | 'A' | 'B' | 'C'>('All');
+  const [rangeFrom3D, setRangeFrom3D] = useState<string>('');
+  const [rangeTo3D, setRangeTo3D] = useState<string>('');
+  const [selectedRate3D, setSelectedRate3D] = useState<number>(10);
+  const [added3DNumbers, setAdded3DNumbers] = useState<{ number: string; type: string; rate: number }[]>([]);
 
   // ------------------ 2D GAME STATE ------------------
   const [selected2DNumbers, setSelected2DNumbers] = useState<string[]>([]);
@@ -538,193 +542,427 @@ export const UserGamePortalView: React.FC = () => {
 
           {/* ===================== GAME 2: 3D GAME ===================== */}
           {activeTab === '3d' && (
-            <div className="space-y-6">
+            <div className="space-y-3.5">
               
-              {/* 3D Header Info */}
-              <div className="p-4 sm:p-5 rounded-3xl bg-slate-900/80 border border-purple-500/30 backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[0_0_30px_rgba(168,85,247,0.1)]">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-purple-400 animate-spin" style={{ animationDuration: '6s' }} />
-                    <h2 className="text-base sm:text-lg font-black text-white tracking-wide">3D GAME PREDICTOR</h2>
-                    <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 text-[10px] font-bold">
-                      900x WIN
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Select your ABC Panel digits, choose combination mode, and place your wager.
-                  </p>
+              {/* TOP HEADER 1: Last Draw Badge + Title "Games 3D" */}
+              <div className="p-3 rounded-2xl bg-gradient-to-r from-slate-900/95 via-purple-950/80 to-slate-900/95 border border-purple-500/30 backdrop-blur-2xl flex flex-col md:flex-row items-center justify-between gap-3 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent blur-xs opacity-70" />
+                
+                {/* Last Draw Badge */}
+                <div className="px-4 py-2 rounded-xl bg-slate-950/90 border border-slate-800 text-center shrink-0 w-full md:w-auto">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Last Draw</div>
+                  <div className="font-mono text-xs font-black text-amber-400">10:00 PM</div>
                 </div>
 
-                {/* Bet Type Tabs: Single, Double, Triple, Straight, Box, Pair, Split */}
-                <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1 sm:pb-0">
-                  {['Straight', 'Box', 'Single', 'Double', 'Triple', 'Pair', 'Split'].map((mode) => (
-                    <button
-                      key={mode}
-                      onClick={() => {
-                        soundManager.playClick();
-                        setBetType3D(mode as any);
-                      }}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all ${
-                        betType3D === mode
-                          ? 'bg-purple-600 text-white shadow-md shadow-purple-600/40'
-                          : 'bg-slate-800 text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      {mode}
-                    </button>
-                  ))}
+                {/* Title: Games 3D */}
+                <div className="flex items-center gap-3">
+                  <Sparkles className="w-6 h-6 text-cyan-400 animate-spin" style={{ animationDuration: '8s' }} />
+                  <h1 className="text-2xl sm:text-4xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-400 to-purple-400 drop-shadow-[0_0_20px_rgba(6,182,212,0.6)] uppercase">
+                    Games 3D
+                  </h1>
+                  <Sparkles className="w-6 h-6 text-purple-400 animate-spin" style={{ animationDuration: '8s' }} />
+                </div>
+
+                {/* Empty spacer / Quick Balance indicator */}
+                <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-xs font-mono font-bold text-slate-300">
+                  <span className="text-slate-400">Balance:</span>
+                  <span className="text-emerald-400 text-sm font-black">₹{activeUser?.points.toLocaleString()}</span>
                 </div>
               </div>
 
-              {/* ABC Panel Reel Selectors */}
-              <div className="p-6 sm:p-8 rounded-3xl bg-slate-900/90 border border-slate-800 backdrop-blur-2xl shadow-2xl space-y-6">
+              {/* ABC PANELS (3 Responsive Panels A, B, C displaying result numbers) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 
-                {/* Panel Indicator */}
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-purple-400 uppercase tracking-wider flex items-center gap-2">
-                    <Layers className="w-4 h-4" />
-                    <span>ABC Panel Selectors</span>
-                  </span>
-                  <span className="text-xs text-slate-400">
-                    Mode: <strong className="text-purple-300 font-bold">{betType3D}</strong>
-                  </span>
+                {/* Panel A */}
+                <div className="p-3 rounded-2xl bg-slate-900/90 border border-cyan-500/30 backdrop-blur-xl space-y-2 shadow-xl">
+                  <div className="py-1 px-3 rounded-xl bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 text-center text-xs font-black uppercase tracking-wider">
+                    Panel A
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 bg-slate-950/90 p-2.5 rounded-xl border border-slate-800">
+                    {[5, 8, 1].map((val, idx) => (
+                      <div
+                        key={`panelA-${idx}`}
+                        className={`py-3 rounded-xl font-mono text-xl sm:text-2xl font-black text-center transition-all cursor-pointer ${
+                          digit1 === val
+                            ? 'bg-gradient-to-b from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/40 border border-cyan-300 scale-105'
+                            : 'bg-slate-900 text-cyan-400 hover:bg-slate-800 border border-slate-800'
+                        }`}
+                        onClick={() => {
+                          soundManager.playClick();
+                          setDigit1(val);
+                        }}
+                      >
+                        {val}
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                {/* 3 Reels Display */}
-                <div className="grid grid-cols-3 gap-4 sm:gap-6 bg-slate-950/80 p-5 sm:p-8 rounded-3xl border border-slate-800">
+                {/* Panel B */}
+                <div className="p-3 rounded-2xl bg-slate-900/90 border border-emerald-500/30 backdrop-blur-xl space-y-2 shadow-xl">
+                  <div className="py-1 px-3 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-center text-xs font-black uppercase tracking-wider">
+                    Panel B
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 bg-slate-950/90 p-2.5 rounded-xl border border-slate-800">
+                    {[4, 4, 7].map((val, idx) => (
+                      <div
+                        key={`panelB-${idx}`}
+                        className={`py-3 rounded-xl font-mono text-xl sm:text-2xl font-black text-center transition-all cursor-pointer ${
+                          digit2 === val
+                            ? 'bg-gradient-to-b from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/40 border border-emerald-300 scale-105'
+                            : 'bg-slate-900 text-emerald-400 hover:bg-slate-800 border border-slate-800'
+                        }`}
+                        onClick={() => {
+                          soundManager.playClick();
+                          setDigit2(val);
+                        }}
+                      >
+                        {val}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Panel C */}
+                <div className="p-3 rounded-2xl bg-slate-900/90 border border-blue-500/30 backdrop-blur-xl space-y-2 shadow-xl">
+                  <div className="py-1 px-3 rounded-xl bg-blue-950/80 border border-blue-500/40 text-blue-300 text-center text-xs font-black uppercase tracking-wider">
+                    Panel C
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 bg-slate-950/90 p-2.5 rounded-xl border border-slate-800">
+                    {[2, 4, 4].map((val, idx) => (
+                      <div
+                        key={`panelC-${idx}`}
+                        className={`py-3 rounded-xl font-mono text-xl sm:text-2xl font-black text-center transition-all cursor-pointer ${
+                          digit3 === val
+                            ? 'bg-gradient-to-b from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/40 border border-blue-300 scale-105'
+                            : 'bg-slate-900 text-blue-400 hover:bg-slate-800 border border-slate-800'
+                        }`}
+                        onClick={() => {
+                          soundManager.playClick();
+                          setDigit3(val);
+                        }}
+                      >
+                        {val}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* TOP HEADER 2: Info Widgets (Date, Time, Timeslot, Remain Time Countdown) */}
+              <div className="p-2.5 rounded-2xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-2xl grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs font-bold shadow-xl">
+                <div className="p-2 rounded-xl bg-slate-950/90 border border-slate-800 text-slate-300 flex items-center justify-center gap-1 font-mono">
+                  <span>Sat, 01-Aug-2026</span>
+                </div>
+
+                <div className="p-2 rounded-xl bg-slate-950/90 border border-slate-800 text-cyan-300 flex items-center justify-center gap-1 font-mono">
+                  <span className="text-slate-400">Current Time :</span>
+                  <span className="text-cyan-200 font-black">10:55:37 PM</span>
+                </div>
+
+                <div className="p-2 rounded-xl bg-slate-950/90 border border-slate-800 text-sky-300 flex items-center justify-center gap-1 font-mono">
+                  <span className="text-slate-400">Current Timeslot :</span>
+                  <span className="text-sky-200 font-black">11:00 PM</span>
+                </div>
+
+                <div className="p-2 rounded-xl bg-rose-950/80 border border-rose-600/60 text-rose-300 flex items-center justify-center gap-1 font-mono">
+                  <Clock className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+                  <span className="text-slate-400">Remain Time :</span>
+                  <span className="text-rose-400 font-black text-sm ml-1">04:23</span>
+                </div>
+              </div>
+
+              {/* TOP ACTIONS BUTTONS: All, A, B, C, 2D Game, Lucky-12 */}
+              <div className="p-2 rounded-2xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-xl grid grid-cols-6 gap-2 shadow-xl">
+                
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setSelectedPanel('All');
+                  }}
+                  className={`py-2 px-2 rounded-xl text-xs font-black transition-all ${
+                    selectedPanel === 'All'
+                      ? 'bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-lg shadow-red-900/50'
+                      : 'bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-800/40'
+                  }`}
+                >
+                  All
+                </button>
+
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setSelectedPanel('A');
+                  }}
+                  className={`py-2 px-2 rounded-xl text-xs font-black transition-all ${
+                    selectedPanel === 'A'
+                      ? 'bg-gradient-to-r from-amber-600 to-orange-700 text-white shadow-lg shadow-amber-900/50'
+                      : 'bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border border-amber-800/40'
+                  }`}
+                >
+                  A
+                </button>
+
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setSelectedPanel('B');
+                  }}
+                  className={`py-2 px-2 rounded-xl text-xs font-black transition-all ${
+                    selectedPanel === 'B'
+                      ? 'bg-gradient-to-r from-amber-700 to-orange-800 text-white shadow-lg shadow-amber-900/50'
+                      : 'bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border border-amber-800/40'
+                  }`}
+                >
+                  B
+                </button>
+
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setSelectedPanel('C');
+                  }}
+                  className={`py-2 px-2 rounded-xl text-xs font-black transition-all ${
+                    selectedPanel === 'C'
+                      ? 'bg-gradient-to-r from-amber-800 to-amber-900 text-white shadow-lg shadow-amber-900/50'
+                      : 'bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border border-amber-800/40'
+                  }`}
+                >
+                  C
+                </button>
+
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setActiveTab('2d');
+                  }}
+                  className="py-2 px-2 rounded-xl bg-purple-900/90 hover:bg-purple-800 text-purple-200 border border-purple-500/40 text-xs font-black transition-all flex items-center justify-center gap-1 shadow-md shadow-purple-950/50"
+                >
+                  <Dices className="w-3.5 h-3.5" />
+                  <span>2D Game</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setActiveTab('lucky12');
+                  }}
+                  className="py-2 px-2 rounded-xl bg-emerald-950/90 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 text-xs font-black transition-all flex items-center justify-center gap-1 shadow-md shadow-emerald-950/50"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Lucky-12</span>
+                </button>
+
+              </div>
+
+              {/* NUMBER SELECTION BUTTONS (0 - 9) + BET TYPE BUTTONS ROW 1 */}
+              <div className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-2xl space-y-3 shadow-xl">
+                
+                {/* Digits 0 - 9 and Main Bet Types Row */}
+                <div className="flex flex-col lg:flex-row items-center gap-3">
                   
-                  {/* Digit 1 - Panel A */}
-                  <div className="text-center space-y-4">
-                    <span className="text-xs font-black uppercase text-purple-400 tracking-wider block">
-                      Panel A
-                    </span>
-                    <motion.div
-                      key={digit1}
-                      initial={{ scale: 1.2, color: '#c084fc' }}
-                      animate={{ scale: 1, color: '#ffffff' }}
-                      className="text-4xl sm:text-6xl font-black font-mono bg-slate-900/90 py-5 sm:py-6 rounded-3xl border border-purple-500/40 shadow-inner"
-                    >
-                      {digit1}
-                    </motion.div>
-                    <div className="flex justify-center gap-1.5 flex-wrap">
-                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-                        <button
-                          key={`digit1-${n}`}
-                          onClick={() => {
-                            soundManager.playClick();
-                            setDigit1(n);
-                          }}
-                          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl font-mono font-bold text-xs transition-all ${
-                            digit1 === n
-                              ? 'bg-purple-600 text-white shadow-md scale-110'
-                              : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
-                          }`}
-                        >
-                          {n}
-                        </button>
-                      ))}
-                    </div>
+                  {/* Number Selection Buttons (0-9) */}
+                  <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5 w-full lg:w-auto shrink-0">
+                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                      <button
+                        key={`num-btn-${num}`}
+                        onClick={() => {
+                          soundManager.playClick();
+                          // Set active digit in order: digit1 -> digit2 -> digit3
+                          if (selectedPanel === 'A') setDigit1(num);
+                          else if (selectedPanel === 'B') setDigit2(num);
+                          else if (selectedPanel === 'C') setDigit3(num);
+                          else {
+                            setDigit1(num);
+                          }
+                        }}
+                        className="w-full h-10 rounded-xl bg-slate-950/90 hover:bg-cyan-950/80 border border-slate-800 hover:border-cyan-500/50 text-white font-mono font-black text-sm flex items-center justify-center transition-all hover:scale-105"
+                      >
+                        {num}
+                      </button>
+                    ))}
                   </div>
 
-                  {/* Digit 2 - Panel B */}
-                  <div className="text-center space-y-4">
-                    <span className="text-xs font-black uppercase text-purple-400 tracking-wider block">
-                      Panel B
-                    </span>
-                    <motion.div
-                      key={digit2}
-                      initial={{ scale: 1.2, color: '#c084fc' }}
-                      animate={{ scale: 1, color: '#ffffff' }}
-                      className="text-4xl sm:text-6xl font-black font-mono bg-slate-900/90 py-5 sm:py-6 rounded-3xl border border-purple-500/40 shadow-inner"
-                    >
-                      {digit2}
-                    </motion.div>
-                    <div className="flex justify-center gap-1.5 flex-wrap">
-                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+                  {/* Bet Type Category Row 1: Single, Double, Triple, Round, L-Pick */}
+                  <div className="grid grid-cols-5 gap-1.5 w-full">
+                    {['Single', 'Double', 'Triple', 'Round', 'L-Pick'].map((typeStr) => {
+                      const isActive = betType3D === typeStr;
+                      return (
                         <button
-                          key={`digit2-${n}`}
+                          key={typeStr}
                           onClick={() => {
                             soundManager.playClick();
-                            setDigit2(n);
+                            setBetType3D(typeStr);
                           }}
-                          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl font-mono font-bold text-xs transition-all ${
-                            digit2 === n
-                              ? 'bg-purple-600 text-white shadow-md scale-110'
-                              : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                          className={`py-2 px-2 rounded-xl text-xs font-black transition-all border ${
+                            isActive
+                              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-cyan-300 shadow-md shadow-blue-900/50 scale-105'
+                              : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-800'
                           }`}
                         >
-                          {n}
+                          {typeStr}
                         </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Digit 3 - Panel C */}
-                  <div className="text-center space-y-4">
-                    <span className="text-xs font-black uppercase text-purple-400 tracking-wider block">
-                      Panel C
-                    </span>
-                    <motion.div
-                      key={digit3}
-                      initial={{ scale: 1.2, color: '#c084fc' }}
-                      animate={{ scale: 1, color: '#ffffff' }}
-                      className="text-4xl sm:text-6xl font-black font-mono bg-slate-900/90 py-5 sm:py-6 rounded-3xl border border-purple-500/40 shadow-inner"
-                    >
-                      {digit3}
-                    </motion.div>
-                    <div className="flex justify-center gap-1.5 flex-wrap">
-                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-                        <button
-                          key={`digit3-${n}`}
-                          onClick={() => {
-                            soundManager.playClick();
-                            setDigit3(n);
-                          }}
-                          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl font-mono font-bold text-xs transition-all ${
-                            digit3 === n
-                              ? 'bg-purple-600 text-white shadow-md scale-110'
-                              : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
-                          }`}
-                        >
-                          {n}
-                        </button>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
 
                 </div>
 
-                {/* Triple Quick Presets */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                  <span className="text-xs text-slate-400 font-bold uppercase shrink-0">Triplets:</span>
-                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((val) => (
+                {/* Bet Type Category Row 2: Box, Straight, Split-Pair, Front-Pair, Back-Pair, Any-Pair */}
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                  {['Box', 'Straight', 'Split-Pair', 'Front-Pair', 'Back-Pair', 'Any-Pair'].map((typeStr) => {
+                    const isActive = betType3D === typeStr;
+                    return (
+                      <button
+                        key={typeStr}
+                        onClick={() => {
+                          soundManager.playClick();
+                          setBetType3D(typeStr);
+                        }}
+                        className={`py-2.5 px-2 rounded-xl text-xs font-black transition-all border ${
+                          isActive
+                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-amber-300 shadow-md shadow-purple-900/50 scale-105'
+                            : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-800'
+                        }`}
+                      >
+                        {typeStr}
+                      </button>
+                    );
+                  })}
+                </div>
+
+              </div>
+
+              {/* BET INPUT AREA (Add Number, Range From/To, Bet Type Dropdown, Rate Selection 10,20,30,40,50,100,200) */}
+              <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-2xl space-y-3 shadow-2xl">
+                
+                <div className="flex flex-col lg:flex-row items-center justify-between gap-3">
+                  
+                  {/* Left Controls: Add Number Button + Range Inputs */}
+                  <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                    
+                    {/* Add Number Button */}
                     <button
-                      key={`triple-${val}`}
-                      onClick={() => set3DTriplePreset(val)}
-                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-purple-900/60 text-slate-300 text-xs font-mono font-bold transition-all border border-slate-700 shrink-0"
+                      onClick={() => {
+                        soundManager.playClick();
+                        const combo = `${digit1}${digit2}${digit3}`;
+                        setAdded3DNumbers((prev) => [...prev, { number: combo, type: betType3D, rate: selectedRate3D }]);
+                        addToast('Number Added', `Added 3D number ${combo} (${betType3D}) at ₹${selectedRate3D}.`, 'success');
+                      }}
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-extrabold text-xs border border-cyan-400/40 shadow-md shadow-cyan-900/30 shrink-0"
                     >
-                      {val}{val}{val}
+                      Add Number
                     </button>
-                  ))}
+
+                    {/* Range Inputs */}
+                    <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-300">
+                      <span className="text-slate-400">Range :</span>
+                      <input
+                        type="number"
+                        placeholder="NUM."
+                        value={rangeFrom3D}
+                        onChange={(e) => setRangeFrom3D(e.target.value)}
+                        className="w-16 bg-slate-950 border border-slate-800 focus:border-cyan-400 rounded-lg px-2 py-1.5 text-center text-xs text-amber-300 placeholder-slate-600 focus:outline-none"
+                      />
+                      <span className="text-slate-400">To</span>
+                      <input
+                        type="number"
+                        placeholder="NUM."
+                        value={rangeTo3D}
+                        onChange={(e) => setRangeTo3D(e.target.value)}
+                        className="w-16 bg-slate-950 border border-slate-800 focus:border-cyan-400 rounded-lg px-2 py-1.5 text-center text-xs text-amber-300 placeholder-slate-600 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* L-P Bet Type Dropdown */}
+                    <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-300">
+                      <span className="text-slate-400">L-P :</span>
+                      <select
+                        value={betType3D}
+                        onChange={(e) => setBetType3D(e.target.value)}
+                        className="bg-slate-950 border border-slate-800 focus:border-cyan-400 rounded-lg px-2 py-1.5 text-xs font-bold text-cyan-300 focus:outline-none"
+                      >
+                        {['Box', 'Straight', 'Single', 'Double', 'Triple', 'Round', 'L-Pick', 'Split-Pair', 'Front-Pair', 'Back-Pair', 'Any-Pair'].map((t) => (
+                          <option key={`opt-${t}`} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                  </div>
+
+                  {/* Right Controls: Rate Selection (10, 20, 30, 40, 50, 100, 200) */}
+                  <div className="flex items-center gap-1.5 flex-wrap w-full lg:w-auto justify-end">
+                    <span className="text-xs font-mono font-bold text-slate-400 mr-1">Rate :</span>
+                    {[10, 20, 30, 40, 50, 100, 200].map((rateVal) => (
+                      <button
+                        key={`rate-${rateVal}`}
+                        onClick={() => {
+                          soundManager.playClick();
+                          setSelectedRate3D(rateVal);
+                          setBetAmount(rateVal);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all border ${
+                          selectedRate3D === rateVal
+                            ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-md font-black scale-105'
+                            : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-800'
+                        }`}
+                      >
+                        {rateVal}
+                      </button>
+                    ))}
+                  </div>
+
                 </div>
 
-                {/* Wager Input & Place Bet */}
-                <div className="p-5 rounded-2xl bg-purple-950/30 border border-purple-800/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <span className="text-xs text-slate-400 font-bold block">Selected 3D Combination:</span>
-                    <span className="text-3xl font-black font-mono text-purple-300">
-                      {digit1}{digit2}{digit3}
+                {/* DIGIT REEL EDITABLE INPUTS & PLACE 3D BET BAR */}
+                <div className="p-3 rounded-xl bg-slate-950/90 border border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  
+                  {/* Selected 3D combination preview */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">
+                      Selected Combo:
+                    </span>
+                    <div className="flex items-center gap-1 font-mono font-black text-2xl text-amber-400">
+                      <input
+                        type="number"
+                        min="0"
+                        max="9"
+                        value={digit1}
+                        onChange={(e) => setDigit1(Math.min(9, Math.max(0, parseInt(e.target.value) || 0)))}
+                        className="w-10 h-10 bg-slate-900 border border-slate-700 rounded-lg text-center text-amber-300 font-mono font-black text-xl focus:border-cyan-400 focus:outline-none"
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        max="9"
+                        value={digit2}
+                        onChange={(e) => setDigit2(Math.min(9, Math.max(0, parseInt(e.target.value) || 0)))}
+                        className="w-10 h-10 bg-slate-900 border border-slate-700 rounded-lg text-center text-emerald-300 font-mono font-black text-xl focus:border-cyan-400 focus:outline-none"
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        max="9"
+                        value={digit3}
+                        onChange={(e) => setDigit3(Math.min(9, Math.max(0, parseInt(e.target.value) || 0)))}
+                        className="w-10 h-10 bg-slate-900 border border-slate-700 rounded-lg text-center text-cyan-300 font-mono font-black text-xl focus:border-cyan-400 focus:outline-none"
+                      />
+                    </div>
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-purple-950 text-purple-300 border border-purple-800 font-bold">
+                      {betType3D}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-2xl px-3 py-2">
-                      <span className="text-xs text-slate-400 font-bold">Wager: ₹</span>
+                  {/* Manual Quantity Input & Buy Button */}
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5">
+                      <span className="text-xs text-slate-400 font-bold">Qty / Bet: ₹</span>
                       <input
                         type="number"
                         value={betAmount}
                         onChange={(e) => setBetAmount(Math.max(1, parseInt(e.target.value) || 0))}
-                        className="w-24 bg-transparent text-sm font-mono font-black text-emerald-400 focus:outline-none"
+                        className="w-20 bg-transparent text-xs font-mono font-black text-emerald-400 focus:outline-none"
                       />
                     </div>
 
@@ -732,12 +970,13 @@ export const UserGamePortalView: React.FC = () => {
                       whileHover={{ scale: 1.04 }}
                       whileTap={{ scale: 0.96 }}
                       onClick={handlePlaceBet}
-                      className="px-6 py-3 rounded-2xl bg-gradient-to-r from-purple-500 via-indigo-600 to-purple-700 text-white font-black text-sm uppercase tracking-wider shadow-[0_0_25px_rgba(168,85,247,0.4)] hover:shadow-[0_0_35px_rgba(168,85,247,0.6)] transition-all flex items-center gap-2"
+                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/30"
                     >
-                      <Ticket className="w-5 h-5" />
+                      <Ticket className="w-4 h-4" />
                       <span>PLACE 3D BET</span>
                     </motion.button>
                   </div>
+
                 </div>
 
               </div>
