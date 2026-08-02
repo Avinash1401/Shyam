@@ -15,12 +15,9 @@ import {
   ShieldCheck,
   X,
   ArrowRight,
-  Clock,
-  Search,
-  CheckCircle2,
+  Zap,
   Lock,
   ChevronLeft,
-  Zap,
 } from 'lucide-react';
 import { LiveResultsView } from './LiveResultsView';
 
@@ -28,10 +25,7 @@ export const OpeningHomePage: React.FC = () => {
   const navigate = useNavigate();
   const { isLoggedIn, userRole } = useAdmin();
 
-  // Modal State for "PLAY FREE" choice popup
-  const [showAuthChoiceModal, setShowAuthChoiceModal] = useState(false);
-
-  // Active Chart Modal (allows viewing 2D, 3D, and L-12 result charts without login)
+  // Active Chart Modal (allows viewing 2D, 3D, and L-12 result charts directly without login)
   const [activeChart, setActiveChart] = useState<'2D' | '3D' | 'L12' | null>(null);
 
   const isPlayerAuth = isLoggedIn && userRole === 'player';
@@ -44,18 +38,20 @@ export const OpeningHomePage: React.FC = () => {
     } else if (isAdminAuth) {
       navigate('/admin/dashboard');
     } else {
-      setShowAuthChoiceModal(true);
+      // Open single login page directly
+      navigate('/player/login');
     }
   };
 
-  const handleGameButtonClick = (gameType: '2d' | '3d' | 'lucky12') => {
+  const handleGameButtonClick = () => {
     soundManager.playClick();
     if (isPlayerAuth) {
       navigate('/player/dashboard');
     } else if (isAdminAuth) {
       navigate('/admin/dashboard');
     } else {
-      setShowAuthChoiceModal(true);
+      // Open single login page directly
+      navigate('/player/login');
     }
   };
 
@@ -95,7 +91,7 @@ export const OpeningHomePage: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* Quick Header Actions */}
+          {/* Header Login / Dashboard Button */}
           <div className="flex items-center gap-2">
             {isLoggedIn ? (
               <button
@@ -107,7 +103,7 @@ export const OpeningHomePage: React.FC = () => {
               </button>
             ) : (
               <button
-                onClick={() => setShowAuthChoiceModal(true)}
+                onClick={() => navigate('/player/login')}
                 className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.4)] hover:scale-105 transition-all cursor-pointer"
               >
                 <Lock className="w-3.5 h-3.5" />
@@ -138,8 +134,8 @@ export const OpeningHomePage: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* MAIN MENU BUTTONS (6 LARGE PREMIUM GREEN BUTTONS) */}
-        <div className="space-y-4">
+        {/* MAIN MENU BUTTONS (GREEN ACTION BUTTONS) */}
+        <div className="space-y-3.5">
           {/* BUTTON 1: PLAY FREE */}
           <motion.button
             whileHover={{ scale: 1.02, y: -2 }}
@@ -169,7 +165,7 @@ export const OpeningHomePage: React.FC = () => {
           <motion.button
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.97 }}
-            onClick={() => handleGameButtonClick('2d')}
+            onClick={handleGameButtonClick}
             className="w-full py-4 sm:py-5 px-6 rounded-2xl bg-gradient-to-r from-emerald-700 via-green-600 to-emerald-600 hover:from-emerald-600 hover:to-green-500 border-2 border-emerald-400/80 hover:border-cyan-300 text-white font-black text-xl uppercase tracking-wider flex items-center justify-between shadow-[0_10px_30px_rgba(16,185,129,0.35)] transition-all group cursor-pointer relative overflow-hidden"
           >
             <div className="flex items-center gap-3.5 z-10">
@@ -177,7 +173,7 @@ export const OpeningHomePage: React.FC = () => {
                 <Dices className="w-6 h-6 text-cyan-300" />
               </div>
               <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans tracking-wide">
-                SHYAM111 2D
+                SHYAM111 2D GAME
               </span>
             </div>
             <div className="flex items-center gap-2 z-10">
@@ -193,7 +189,7 @@ export const OpeningHomePage: React.FC = () => {
           <motion.button
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.97 }}
-            onClick={() => handleGameButtonClick('3d')}
+            onClick={handleGameButtonClick}
             className="w-full py-4 sm:py-5 px-6 rounded-2xl bg-gradient-to-r from-emerald-700 via-green-600 to-emerald-600 hover:from-emerald-600 hover:to-green-500 border-2 border-emerald-400/80 hover:border-cyan-300 text-white font-black text-xl uppercase tracking-wider flex items-center justify-between shadow-[0_10px_30px_rgba(16,185,129,0.35)] transition-all group cursor-pointer relative overflow-hidden"
           >
             <div className="flex items-center gap-3.5 z-10">
@@ -201,7 +197,7 @@ export const OpeningHomePage: React.FC = () => {
                 <Sparkles className="w-6 h-6 text-purple-300" />
               </div>
               <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans tracking-wide">
-                SHYAM111 3D
+                SHYAM111 3D GAME
               </span>
             </div>
             <div className="flex items-center gap-2 z-10">
@@ -217,7 +213,7 @@ export const OpeningHomePage: React.FC = () => {
           <motion.button
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.97 }}
-            onClick={() => handleGameButtonClick('lucky12')}
+            onClick={handleGameButtonClick}
             className="w-full py-4 sm:py-5 px-6 rounded-2xl bg-gradient-to-r from-emerald-700 via-green-600 to-emerald-600 hover:from-emerald-600 hover:to-green-500 border-2 border-emerald-400/80 hover:border-cyan-300 text-white font-black text-xl uppercase tracking-wider flex items-center justify-between shadow-[0_10px_30px_rgba(16,185,129,0.35)] transition-all group cursor-pointer relative overflow-hidden"
           >
             <div className="flex items-center gap-3.5 z-10">
@@ -225,7 +221,7 @@ export const OpeningHomePage: React.FC = () => {
                 <Flame className="w-6 h-6 text-amber-300" />
               </div>
               <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans tracking-wide">
-                SHYAM111 L-12
+                SHYAM111 L-12 GAME
               </span>
             </div>
             <div className="flex items-center gap-2 z-10">
@@ -337,115 +333,7 @@ export const OpeningHomePage: React.FC = () => {
       </footer>
 
       {/* ========================================================= */}
-      {/* MODAL 1: PLAY FREE CHOICE POPUP (PLAYER LOGIN vs ADMIN LOGIN) */}
-      {/* ========================================================= */}
-      <AnimatePresence>
-        {showAuthChoiceModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xl">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-[0_20px_60px_rgba(0,0,0,0.9)] space-y-6 relative overflow-hidden"
-            >
-              {/* Glow background */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-
-              {/* Close Button */}
-              <button
-                onClick={() => {
-                  soundManager.playClick();
-                  setShowAuthChoiceModal(false);
-                }}
-                className="absolute top-4 right-4 p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <div className="text-center space-y-2 pt-2">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-emerald-500 p-[2px] mx-auto shadow-lg">
-                  <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-emerald-400">
-                    <Play className="w-6 h-6 fill-emerald-400" />
-                  </div>
-                </div>
-                <h3 className="text-xl font-black text-white tracking-wide uppercase">
-                  CHOOSE LOGIN MODE
-                </h3>
-                <p className="text-xs text-slate-400 font-medium">
-                  Select your login portal to access Shyam111 Game
-                </p>
-              </div>
-
-              {/* TWO CHOICE BUTTONS */}
-              <div className="space-y-3 pt-2">
-                {/* CHOICE 1: PLAYER LOGIN */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    soundManager.playClick();
-                    setShowAuthChoiceModal(false);
-                    navigate('/player/login');
-                  }}
-                  className="w-full py-4 px-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 border border-emerald-400/50 text-white font-black text-base uppercase tracking-wider flex items-center justify-between shadow-lg shadow-emerald-950/50 cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-slate-950/40 text-emerald-300">
-                      <User className="w-5 h-5" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-black text-white">PLAYER LOGIN</p>
-                      <p className="text-[10px] text-emerald-200 font-normal">Play 2D, 3D & L-12 Games</p>
-                    </div>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-emerald-200 group-hover:translate-x-1 transition-transform" />
-                </motion.button>
-
-                {/* CHOICE 2: ADMIN LOGIN */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    soundManager.playClick();
-                    setShowAuthChoiceModal(false);
-                    navigate('/admin/login');
-                  }}
-                  className="w-full py-4 px-5 rounded-2xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-200 font-black text-base uppercase tracking-wider flex items-center justify-between shadow-lg cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                      <ShieldCheck className="w-5 h-5" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-black text-white">ADMIN LOGIN</p>
-                      <p className="text-[10px] text-slate-400 font-normal font-mono">Master Management Panel</p>
-                    </div>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-cyan-400 group-hover:translate-x-1 transition-transform" />
-                </motion.button>
-              </div>
-
-              <div className="text-center pt-1">
-                <p className="text-[11px] text-slate-400">
-                  New Player?{' '}
-                  <span
-                    onClick={() => {
-                      setShowAuthChoiceModal(false);
-                      navigate('/player/register');
-                    }}
-                    className="text-amber-400 font-bold underline cursor-pointer hover:text-amber-300"
-                  >
-                    Register Free Account
-                  </span>
-                </p>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* ========================================================= */}
-      {/* MODAL 2: PUBLIC RESULT CHART MODAL (NO LOGIN REQUIRED) */}
+      {/* PUBLIC RESULT CHART MODAL (NO LOGIN REQUIRED) */}
       {/* ========================================================= */}
       <AnimatePresence>
         {activeChart && (
