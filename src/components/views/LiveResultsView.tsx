@@ -64,6 +64,12 @@ export const LiveResultsView: React.FC<LiveResultsViewProps> = ({ gameType }) =>
     return { a: winningStr[0] || '5', b: winningStr[1] || '8', c: winningStr[2] || '1' };
   };
 
+  // Get Today and Yesterday date strings
+  const todayStr = new Date().toISOString().split('T')[0];
+  const yesterdayObj = new Date();
+  yesterdayObj.setDate(yesterdayObj.getDate() - 1);
+  const yesterdayStr = yesterdayObj.toISOString().split('T')[0];
+
   return (
     <div className="space-y-6 pb-12 font-sans selection:bg-cyan-500 selection:text-slate-950">
       
@@ -103,52 +109,88 @@ export const LiveResultsView: React.FC<LiveResultsViewProps> = ({ gameType }) =>
         </div>
       </div>
 
-      {/* SEARCH, CALENDAR & FILTER BAR */}
-      <div className="p-4 rounded-3xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-2xl grid grid-cols-1 sm:grid-cols-3 gap-3 shadow-2xl">
-        
-        {/* Search Input */}
-        <div className="relative">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search Draw No or Result..."
-            className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-2xl py-2.5 pl-10 pr-4 text-xs text-white placeholder-slate-600 focus:outline-none transition-all font-mono"
-          />
+      {/* QUICK DATE SHORTCUTS & SEARCH BAR */}
+      <div className="p-4 rounded-3xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-2xl space-y-3 shadow-2xl">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                soundManager.playClick();
+                setSelectedDate(todayStr);
+              }}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                selectedDate === todayStr
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 shadow-md shadow-emerald-500/20 font-black'
+                  : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Today's Result</span>
+            </button>
+            <button
+              onClick={() => {
+                soundManager.playClick();
+                setSelectedDate(yesterdayStr);
+              }}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                selectedDate === yesterdayStr
+                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md shadow-cyan-500/20 font-black'
+                  : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Yesterday Result</span>
+            </button>
+          </div>
+          <span className="text-[11px] font-mono text-cyan-400 bg-cyan-950/60 px-3 py-1 rounded-full border border-cyan-500/30">
+            Selected: {selectedDate}
+          </span>
         </div>
 
-        {/* Calendar Date Picker */}
-        <div className="relative">
-          <Calendar className="w-4 h-4 text-cyan-400 absolute left-3.5 top-3.5 pointer-events-none" />
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => {
-              soundManager.playClick();
-              setSelectedDate(e.target.value);
-            }}
-            className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-2xl py-2.5 pl-10 pr-4 text-xs font-mono font-bold text-slate-200 focus:outline-none cursor-pointer"
-          />
-        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search Draw No or Result..."
+              className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-2xl py-2.5 pl-10 pr-4 text-xs text-white placeholder-slate-600 focus:outline-none transition-all font-mono"
+            />
+          </div>
 
-        {/* Filter Dropdown */}
-        <div className="relative">
-          <Filter className="w-4 h-4 text-purple-400 absolute left-3.5 top-3.5 pointer-events-none" />
-          <select
-            value={timeFilter}
-            onChange={(e) => {
-              soundManager.playClick();
-              setTimeFilter(e.target.value);
-            }}
-            className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-2xl py-2.5 pl-10 pr-4 text-xs font-bold text-slate-200 focus:outline-none cursor-pointer"
-          >
-            <option value="ALL">All Draw Timeslots</option>
-            <option value="AM">Morning Draws (AM)</option>
-            <option value="PM">Evening / Night Draws (PM)</option>
-          </select>
-        </div>
+          {/* Calendar Date Picker */}
+          <div className="relative">
+            <Calendar className="w-4 h-4 text-cyan-400 absolute left-3.5 top-3.5 pointer-events-none" />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => {
+                soundManager.playClick();
+                setSelectedDate(e.target.value);
+              }}
+              className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-2xl py-2.5 pl-10 pr-4 text-xs font-mono font-bold text-slate-200 focus:outline-none cursor-pointer"
+            />
+          </div>
 
+          {/* Filter Dropdown */}
+          <div className="relative">
+            <Filter className="w-4 h-4 text-purple-400 absolute left-3.5 top-3.5 pointer-events-none" />
+            <select
+              value={timeFilter}
+              onChange={(e) => {
+                soundManager.playClick();
+                setTimeFilter(e.target.value);
+              }}
+              className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-2xl py-2.5 pl-10 pr-4 text-xs font-bold text-slate-200 focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">All Draw Timeslots</option>
+              <option value="AM">Morning Draws (AM)</option>
+              <option value="PM">Evening / Night Draws (PM)</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* LATEST RESULT HIGHLIGHT CARD */}

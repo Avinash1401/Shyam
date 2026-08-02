@@ -243,23 +243,24 @@ export const UserGamePortalView: React.FC = () => {
     <div className="space-y-6 pb-12 font-sans selection:bg-cyan-500 selection:text-slate-950">
       
       {/* SHYAM111 GAME HERO BRANDING BANNER */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900 border border-slate-800/90 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 via-purple-500 to-amber-500 opacity-80" />
-        <div className="flex items-center gap-4 text-center md:text-left z-10">
+      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-cyan-950/80 via-slate-900 to-slate-900 border border-cyan-500/40 backdrop-blur-2xl shadow-[0_20px_60px_rgba(14,165,233,0.2)] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-emerald-400 opacity-90 animate-pulse" />
+        <div className="flex flex-col md:flex-row items-center gap-4 z-10 w-full justify-center md:justify-start">
           <motion.div
-            whileHover={{ scale: 1.05, rotate: 3 }}
-            className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-purple-600 p-[2px] shadow-[0_0_30px_rgba(14,165,233,0.4)] shrink-0"
+            whileHover={{ scale: 1.08, rotate: 3 }}
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-cyan-400 via-blue-600 to-emerald-400 p-[2px] shadow-[0_0_35px_rgba(14,165,233,0.5)] shrink-0"
           >
-            <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-cyan-400">
+            <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-cyan-300">
               <Gamepad2 className="w-10 h-10 animate-pulse" />
             </div>
           </motion.div>
           <div>
-            <h1 className="text-2xl sm:text-4xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 uppercase drop-shadow-[0_0_20px_rgba(14,165,233,0.4)]">
+            <h1 className="text-2xl sm:text-4xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-300 to-emerald-300 uppercase drop-shadow-[0_0_20px_rgba(14,165,233,0.5)]">
               SHYAM111 GAME
             </h1>
-            <p className="text-xs sm:text-sm text-slate-400 font-medium mt-1">
-              Official Live Lottery, 2D, 3D & Lucky-12 Gaming Dashboard
+            <p className="text-xs sm:text-sm text-slate-300 font-semibold mt-1 flex items-center justify-center md:justify-start gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
+              <span>Official Gaming Portal • 2D, 3D, L-12 & Live Results</span>
             </p>
           </div>
         </div>
@@ -349,18 +350,23 @@ export const UserGamePortalView: React.FC = () => {
         </div>
       )}
 
-      {/* HOME MENU: 6 LARGE PREMIUM BUTTONS */}
-      <div className="space-y-3">
-        <h2 className="text-xs font-extrabold uppercase tracking-widest text-slate-400 flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-cyan-400" />
-          <span>SHYAM111 HOME MENU</span>
-        </h2>
+      {/* MAIN MENU: 6 LARGE STACKED PREMIUM GREEN BUTTONS (INSPIRED BY REFERENCE IMAGE) */}
+      <div className="max-w-2xl mx-auto space-y-4">
+        <div className="flex items-center justify-between px-2">
+          <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-cyan-400" />
+            <span>SHYAM111 MAIN MENU</span>
+          </h2>
+          <span className="text-[10px] text-emerald-400 font-mono font-bold uppercase tracking-widest bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-500/30">
+            6 Official Games & Charts
+          </span>
+        </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {/* 1. FREE PLAY */}
+        <div className="space-y-3.5">
+          {/* BUTTON 1: PLAY FREE */}
           <motion.button
-            whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => {
               soundManager.playClick();
               if (activeUser) {
@@ -369,152 +375,140 @@ export const UserGamePortalView: React.FC = () => {
                 setCurrentPage('login');
               }
             }}
-            className="p-4 rounded-2xl bg-gradient-to-b from-emerald-950/80 via-slate-900 to-slate-950 border border-emerald-500/40 hover:border-emerald-400 transition-all text-left shadow-lg flex flex-col justify-between space-y-3 group cursor-pointer relative overflow-hidden"
+            className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-700 via-green-600 to-emerald-600 hover:from-emerald-600 hover:to-green-500 border-2 border-emerald-400/80 hover:border-cyan-300 text-white font-black text-lg sm:text-xl uppercase tracking-wider flex items-center justify-between shadow-[0_10px_30px_rgba(16,185,129,0.35)] transition-all group cursor-pointer relative overflow-hidden"
           >
-            <div className="flex items-center justify-between">
-              <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform">
-                <Play className="w-5 h-5 fill-emerald-400" />
+            <div className="flex items-center gap-3 z-10">
+              <div className="p-2 rounded-xl bg-slate-950/40 border border-white/20 text-amber-300 group-hover:scale-110 transition-transform">
+                <Play className="w-6 h-6 fill-amber-300" />
               </div>
-              <span className="text-[9px] font-black uppercase tracking-wider text-emerald-300 px-2 py-0.5 bg-emerald-950 border border-emerald-800 rounded-full">
-                DEMO / PLAY
+              <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans">PLAY FREE</span>
+            </div>
+            <div className="flex items-center gap-2 z-10">
+              <span className="text-xs font-black uppercase tracking-wider text-amber-300 bg-slate-950/60 px-3 py-1 rounded-full border border-amber-400/40">
+                FREE DEMO
               </span>
             </div>
-            <div>
-              <h3 className="text-xs font-black text-white group-hover:text-emerald-300 transition-colors uppercase">
-                1. FREE PLAY
-              </h3>
-              <p className="text-[10px] text-slate-400 mt-0.5">Instant Dashboard & Free Demo</p>
-            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
           </motion.button>
 
-          {/* 2. SHYAM111 2D GAME */}
+          {/* BUTTON 2: SHYAM111 2D */}
           <motion.button
-            whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => {
               soundManager.playClick();
               setActiveTab('2d');
             }}
-            className="p-4 rounded-2xl bg-gradient-to-b from-cyan-950/80 via-slate-900 to-slate-950 border border-cyan-500/40 hover:border-cyan-400 transition-all text-left shadow-lg flex flex-col justify-between space-y-3 group cursor-pointer relative overflow-hidden"
+            className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-700 via-green-600 to-emerald-600 hover:from-emerald-600 hover:to-green-500 border-2 border-emerald-400/80 hover:border-cyan-300 text-white font-black text-lg sm:text-xl uppercase tracking-wider flex items-center justify-between shadow-[0_10px_30px_rgba(16,185,129,0.35)] transition-all group cursor-pointer relative overflow-hidden"
           >
-            <div className="flex items-center justify-between">
-              <div className="p-2.5 rounded-xl bg-cyan-500/20 text-cyan-400 group-hover:scale-110 transition-transform">
-                <Dices className="w-5 h-5" />
+            <div className="flex items-center gap-3 z-10">
+              <div className="p-2 rounded-xl bg-slate-950/40 border border-white/20 text-cyan-300 group-hover:scale-110 transition-transform">
+                <Dices className="w-6 h-6" />
               </div>
-              <span className="text-[9px] font-black uppercase tracking-wider text-cyan-300 px-2 py-0.5 bg-cyan-950 border border-cyan-800 rounded-full">
-                90x WIN
+              <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans">SHYAM111 2D</span>
+            </div>
+            <div className="flex items-center gap-2 z-10">
+              <span className="text-xs font-black uppercase tracking-wider text-cyan-300 bg-slate-950/60 px-3 py-1 rounded-full border border-cyan-400/40">
+                90x PAYOUT
               </span>
             </div>
-            <div>
-              <h3 className="text-xs font-black text-white group-hover:text-cyan-300 transition-colors uppercase">
-                2. 2D GAME
-              </h3>
-              <p className="text-[10px] text-slate-400 mt-0.5">Manual Grid & Quick Filters</p>
-            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
           </motion.button>
 
-          {/* 3. SHYAM111 3D GAME */}
+          {/* BUTTON 3: SHYAM111 3D */}
           <motion.button
-            whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => {
               soundManager.playClick();
               setActiveTab('3d');
             }}
-            className="p-4 rounded-2xl bg-gradient-to-b from-purple-950/80 via-slate-900 to-slate-950 border border-purple-500/40 hover:border-purple-400 transition-all text-left shadow-lg flex flex-col justify-between space-y-3 group cursor-pointer relative overflow-hidden"
+            className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-700 via-green-600 to-emerald-600 hover:from-emerald-600 hover:to-green-500 border-2 border-emerald-400/80 hover:border-cyan-300 text-white font-black text-lg sm:text-xl uppercase tracking-wider flex items-center justify-between shadow-[0_10px_30px_rgba(16,185,129,0.35)] transition-all group cursor-pointer relative overflow-hidden"
           >
-            <div className="flex items-center justify-between">
-              <div className="p-2.5 rounded-xl bg-purple-500/20 text-purple-400 group-hover:scale-110 transition-transform">
-                <Sparkles className="w-5 h-5" />
+            <div className="flex items-center gap-3 z-10">
+              <div className="p-2 rounded-xl bg-slate-950/40 border border-white/20 text-purple-300 group-hover:scale-110 transition-transform">
+                <Sparkles className="w-6 h-6" />
               </div>
-              <span className="text-[9px] font-black uppercase tracking-wider text-purple-300 px-2 py-0.5 bg-purple-950 border border-purple-800 rounded-full">
-                900x WIN
+              <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans">SHYAM111 3D</span>
+            </div>
+            <div className="flex items-center gap-2 z-10">
+              <span className="text-xs font-black uppercase tracking-wider text-purple-300 bg-slate-950/60 px-3 py-1 rounded-full border border-purple-400/40">
+                900x PAYOUT
               </span>
             </div>
-            <div>
-              <h3 className="text-xs font-black text-white group-hover:text-purple-300 transition-colors uppercase">
-                3. 3D GAME
-              </h3>
-              <p className="text-[10px] text-slate-400 mt-0.5">ABC Panels & Combinations</p>
-            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
           </motion.button>
 
-          {/* 4. SHYAM111 L-12 GAME */}
+          {/* BUTTON 4: SHYAM111 L-12 */}
           <motion.button
-            whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => {
               soundManager.playClick();
               setActiveTab('lucky12');
             }}
-            className="p-4 rounded-2xl bg-gradient-to-b from-amber-950/80 via-slate-900 to-slate-950 border border-amber-500/40 hover:border-amber-400 transition-all text-left shadow-lg flex flex-col justify-between space-y-3 group cursor-pointer relative overflow-hidden"
+            className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-700 via-green-600 to-emerald-600 hover:from-emerald-600 hover:to-green-500 border-2 border-emerald-400/80 hover:border-cyan-300 text-white font-black text-lg sm:text-xl uppercase tracking-wider flex items-center justify-between shadow-[0_10px_30px_rgba(16,185,129,0.35)] transition-all group cursor-pointer relative overflow-hidden"
           >
-            <div className="flex items-center justify-between">
-              <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 group-hover:scale-110 transition-transform">
-                <Flame className="w-5 h-5" />
+            <div className="flex items-center gap-3 z-10">
+              <div className="p-2 rounded-xl bg-slate-950/40 border border-white/20 text-amber-300 group-hover:scale-110 transition-transform">
+                <Flame className="w-6 h-6" />
               </div>
-              <span className="text-[9px] font-black uppercase tracking-wider text-amber-300 px-2 py-0.5 bg-amber-950 border border-amber-800 rounded-full">
-                10x WIN
+              <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans">SHYAM111 L-12</span>
+            </div>
+            <div className="flex items-center gap-2 z-10">
+              <span className="text-xs font-black uppercase tracking-wider text-amber-300 bg-slate-950/60 px-3 py-1 rounded-full border border-amber-400/40">
+                10x PAYOUT
               </span>
             </div>
-            <div>
-              <h3 className="text-xs font-black text-white group-hover:text-amber-300 transition-colors uppercase">
-                4. LUCKY-12
-              </h3>
-              <p className="text-[10px] text-slate-400 mt-0.5">12 Cards & Free Buy</p>
-            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
           </motion.button>
 
-          {/* 5. 2D RESULT CHART */}
+          {/* BUTTON 5: 2D RESULT CHART */}
           <motion.button
-            whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => {
               soundManager.playClick();
               setCurrentPage('live_2d');
             }}
-            className="p-4 rounded-2xl bg-gradient-to-b from-teal-950/80 via-slate-900 to-slate-950 border border-teal-500/40 hover:border-teal-400 transition-all text-left shadow-lg flex flex-col justify-between space-y-3 group cursor-pointer relative overflow-hidden"
+            className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-700 via-green-600 to-emerald-600 hover:from-emerald-600 hover:to-green-500 border-2 border-emerald-400/80 hover:border-cyan-300 text-white font-black text-lg sm:text-xl uppercase tracking-wider flex items-center justify-between shadow-[0_10px_30px_rgba(16,185,129,0.35)] transition-all group cursor-pointer relative overflow-hidden"
           >
-            <div className="flex items-center justify-between">
-              <div className="p-2.5 rounded-xl bg-teal-500/20 text-teal-400 group-hover:scale-110 transition-transform">
-                <Calendar className="w-5 h-5" />
+            <div className="flex items-center gap-3 z-10">
+              <div className="p-2 rounded-xl bg-slate-950/40 border border-white/20 text-teal-300 group-hover:scale-110 transition-transform">
+                <Calendar className="w-6 h-6" />
               </div>
-              <span className="text-[9px] font-black uppercase tracking-wider text-teal-300 px-2 py-0.5 bg-teal-950 border border-teal-800 rounded-full">
+              <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans">2D RESULT CHART</span>
+            </div>
+            <div className="flex items-center gap-2 z-10">
+              <span className="text-xs font-black uppercase tracking-wider text-teal-300 bg-slate-950/60 px-3 py-1 rounded-full border border-teal-400/40">
                 HISTORY
               </span>
             </div>
-            <div>
-              <h3 className="text-xs font-black text-white group-hover:text-teal-300 transition-colors uppercase">
-                5. 2D CHART
-              </h3>
-              <p className="text-[10px] text-slate-400 mt-0.5">Full Day Results & Calendar</p>
-            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
           </motion.button>
 
-          {/* 6. 3D RESULT CHART */}
+          {/* BUTTON 6: 3D RESULT CHART */}
           <motion.button
-            whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => {
               soundManager.playClick();
               setCurrentPage('live_3d');
             }}
-            className="p-4 rounded-2xl bg-gradient-to-b from-rose-950/80 via-slate-900 to-slate-950 border border-rose-500/40 hover:border-rose-400 transition-all text-left shadow-lg flex flex-col justify-between space-y-3 group cursor-pointer relative overflow-hidden"
+            className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-700 via-green-600 to-emerald-600 hover:from-emerald-600 hover:to-green-500 border-2 border-emerald-400/80 hover:border-cyan-300 text-white font-black text-lg sm:text-xl uppercase tracking-wider flex items-center justify-between shadow-[0_10px_30px_rgba(16,185,129,0.35)] transition-all group cursor-pointer relative overflow-hidden"
           >
-            <div className="flex items-center justify-between">
-              <div className="p-2.5 rounded-xl bg-rose-500/20 text-rose-400 group-hover:scale-110 transition-transform">
-                <Trophy className="w-5 h-5" />
+            <div className="flex items-center gap-3 z-10">
+              <div className="p-2 rounded-xl bg-slate-950/40 border border-white/20 text-rose-300 group-hover:scale-110 transition-transform">
+                <Trophy className="w-6 h-6" />
               </div>
-              <span className="text-[9px] font-black uppercase tracking-wider text-rose-300 px-2 py-0.5 bg-rose-950 border border-rose-800 rounded-full">
+              <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans">3D RESULT CHART</span>
+            </div>
+            <div className="flex items-center gap-2 z-10">
+              <span className="text-xs font-black uppercase tracking-wider text-rose-300 bg-slate-950/60 px-3 py-1 rounded-full border border-rose-400/40">
                 ABC RESULTS
               </span>
             </div>
-            <div>
-              <h3 className="text-xs font-black text-white group-hover:text-rose-300 transition-colors uppercase">
-                6. 3D CHART
-              </h3>
-              <p className="text-[10px] text-slate-400 mt-0.5">A, B, C Results & Search</p>
-            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
           </motion.button>
         </div>
       </div>
