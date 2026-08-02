@@ -18,6 +18,7 @@ import {
   Zap,
   CheckCircle2,
   ArrowUpRight,
+  ArrowDownRight,
   Search,
   Check,
   X,
@@ -28,6 +29,11 @@ import {
   LogOut,
   Gift,
   KeyRound,
+  Bell,
+  User,
+  ShieldCheck,
+  Play,
+  Calendar,
 } from 'lucide-react';
 
 export const UserGamePortalView: React.FC = () => {
@@ -44,6 +50,9 @@ export const UserGamePortalView: React.FC = () => {
     setCurrentPage,
     isLoadingData,
     refreshData,
+    logoutPlayer,
+    logout,
+    notifications,
   } = useAdmin();
 
   // Active user account for player session
@@ -83,6 +92,7 @@ export const UserGamePortalView: React.FC = () => {
   const [showDepositModal, setShowDepositModal] = useState<boolean>(false);
   const [depositAmount, setDepositAmount] = useState<number>(1000);
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
+  const [showNotificationsModal, setShowNotificationsModal] = useState<boolean>(false);
 
   // ------------------ HANDLERS ------------------
   const toggleLuckyCard = (cardName: string) => {
@@ -230,7 +240,284 @@ export const UserGamePortalView: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-12 font-sans selection:bg-cyan-500 selection:text-slate-950">
+      
+      {/* SHYAM111 GAME HERO BRANDING BANNER */}
+      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900 border border-slate-800/90 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 via-purple-500 to-amber-500 opacity-80" />
+        <div className="flex items-center gap-4 text-center md:text-left z-10">
+          <motion.div
+            whileHover={{ scale: 1.05, rotate: 3 }}
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-purple-600 p-[2px] shadow-[0_0_30px_rgba(14,165,233,0.4)] shrink-0"
+          >
+            <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-cyan-400">
+              <Gamepad2 className="w-10 h-10 animate-pulse" />
+            </div>
+          </motion.div>
+          <div>
+            <h1 className="text-2xl sm:text-4xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 uppercase drop-shadow-[0_0_20px_rgba(14,165,233,0.4)]">
+              SHYAM111 GAME
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-400 font-medium mt-1">
+              Official Live Lottery, 2D, 3D & Lucky-12 Gaming Dashboard
+            </p>
+          </div>
+        </div>
+
+        {/* Player Dashboard Quick Info Box */}
+        {activeUser && (
+          <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 backdrop-blur-md flex items-center gap-4 shrink-0 shadow-inner z-10">
+            <div className="p-3 rounded-xl bg-cyan-950 text-cyan-400 border border-cyan-500/30">
+              <User className="w-6 h-6" />
+            </div>
+            <div>
+              <span className="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider block">
+                {activeUser.name || activeUser.username || 'Player'}
+              </span>
+              <span className="text-xl font-mono font-black text-amber-400 block">
+                ₹{activeUser.points?.toLocaleString('en-IN') || '0'}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* PLAYER DASHBOARD CONTROL BAR */}
+      {activeUser && (
+        <div className="p-4 rounded-3xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-2xl shadow-xl flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+            <span className="text-xs font-bold text-white font-mono">
+              Welcome, <span className="text-cyan-400">{activeUser.name || activeUser.username}</span>
+            </span>
+            <span className="text-xs font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/30">
+              ID: #{activeUser.id?.slice(0, 8) || 'P-111'}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setCurrentPage('profile')}
+              className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all"
+            >
+              <User className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Profile</span>
+            </button>
+            <button
+              onClick={() => setCurrentPage('player_deposit')}
+              className="px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-1.5 transition-all"
+            >
+              <ArrowUpRight className="w-3.5 h-3.5" />
+              <span>Deposit</span>
+            </button>
+            <button
+              onClick={() => setCurrentPage('player_withdrawal')}
+              className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-bold flex items-center gap-1.5 transition-all"
+            >
+              <ArrowDownRight className="w-3.5 h-3.5" />
+              <span>Withdraw</span>
+            </button>
+            <button
+              onClick={() => setShowHistoryModal(true)}
+              className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all"
+            >
+              <History className="w-3.5 h-3.5 text-cyan-400" />
+              <span>History</span>
+            </button>
+            <button
+              onClick={() => setShowNotificationsModal(true)}
+              className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all relative"
+            >
+              <Bell className="w-3.5 h-3.5 text-purple-400" />
+              <span>Notifications</span>
+              {notifications && notifications.length > 0 && (
+                <span className="w-2 h-2 rounded-full bg-red-500 absolute -top-0.5 -right-0.5 animate-pulse" />
+              )}
+            </button>
+            <button
+              onClick={() => {
+                if (logoutPlayer) logoutPlayer();
+                else if (logout) logout();
+                addToast('Logged out successfully', 'info');
+              }}
+              className="px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-bold flex items-center gap-1.5 transition-all"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* HOME MENU: 6 LARGE PREMIUM BUTTONS */}
+      <div className="space-y-3">
+        <h2 className="text-xs font-extrabold uppercase tracking-widest text-slate-400 flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-cyan-400" />
+          <span>SHYAM111 HOME MENU</span>
+        </h2>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {/* 1. FREE PLAY */}
+          <motion.button
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => {
+              soundManager.playClick();
+              if (activeUser) {
+                setActiveTab('lucky12');
+              } else {
+                setCurrentPage('login');
+              }
+            }}
+            className="p-4 rounded-2xl bg-gradient-to-b from-emerald-950/80 via-slate-900 to-slate-950 border border-emerald-500/40 hover:border-emerald-400 transition-all text-left shadow-lg flex flex-col justify-between space-y-3 group cursor-pointer relative overflow-hidden"
+          >
+            <div className="flex items-center justify-between">
+              <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform">
+                <Play className="w-5 h-5 fill-emerald-400" />
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-wider text-emerald-300 px-2 py-0.5 bg-emerald-950 border border-emerald-800 rounded-full">
+                DEMO / PLAY
+              </span>
+            </div>
+            <div>
+              <h3 className="text-xs font-black text-white group-hover:text-emerald-300 transition-colors uppercase">
+                1. FREE PLAY
+              </h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">Instant Dashboard & Free Demo</p>
+            </div>
+          </motion.button>
+
+          {/* 2. SHYAM111 2D GAME */}
+          <motion.button
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => {
+              soundManager.playClick();
+              setActiveTab('2d');
+            }}
+            className="p-4 rounded-2xl bg-gradient-to-b from-cyan-950/80 via-slate-900 to-slate-950 border border-cyan-500/40 hover:border-cyan-400 transition-all text-left shadow-lg flex flex-col justify-between space-y-3 group cursor-pointer relative overflow-hidden"
+          >
+            <div className="flex items-center justify-between">
+              <div className="p-2.5 rounded-xl bg-cyan-500/20 text-cyan-400 group-hover:scale-110 transition-transform">
+                <Dices className="w-5 h-5" />
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-wider text-cyan-300 px-2 py-0.5 bg-cyan-950 border border-cyan-800 rounded-full">
+                90x WIN
+              </span>
+            </div>
+            <div>
+              <h3 className="text-xs font-black text-white group-hover:text-cyan-300 transition-colors uppercase">
+                2. 2D GAME
+              </h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">Manual Grid & Quick Filters</p>
+            </div>
+          </motion.button>
+
+          {/* 3. SHYAM111 3D GAME */}
+          <motion.button
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => {
+              soundManager.playClick();
+              setActiveTab('3d');
+            }}
+            className="p-4 rounded-2xl bg-gradient-to-b from-purple-950/80 via-slate-900 to-slate-950 border border-purple-500/40 hover:border-purple-400 transition-all text-left shadow-lg flex flex-col justify-between space-y-3 group cursor-pointer relative overflow-hidden"
+          >
+            <div className="flex items-center justify-between">
+              <div className="p-2.5 rounded-xl bg-purple-500/20 text-purple-400 group-hover:scale-110 transition-transform">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-wider text-purple-300 px-2 py-0.5 bg-purple-950 border border-purple-800 rounded-full">
+                900x WIN
+              </span>
+            </div>
+            <div>
+              <h3 className="text-xs font-black text-white group-hover:text-purple-300 transition-colors uppercase">
+                3. 3D GAME
+              </h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">ABC Panels & Combinations</p>
+            </div>
+          </motion.button>
+
+          {/* 4. SHYAM111 L-12 GAME */}
+          <motion.button
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => {
+              soundManager.playClick();
+              setActiveTab('lucky12');
+            }}
+            className="p-4 rounded-2xl bg-gradient-to-b from-amber-950/80 via-slate-900 to-slate-950 border border-amber-500/40 hover:border-amber-400 transition-all text-left shadow-lg flex flex-col justify-between space-y-3 group cursor-pointer relative overflow-hidden"
+          >
+            <div className="flex items-center justify-between">
+              <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 group-hover:scale-110 transition-transform">
+                <Flame className="w-5 h-5" />
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-wider text-amber-300 px-2 py-0.5 bg-amber-950 border border-amber-800 rounded-full">
+                10x WIN
+              </span>
+            </div>
+            <div>
+              <h3 className="text-xs font-black text-white group-hover:text-amber-300 transition-colors uppercase">
+                4. LUCKY-12
+              </h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">12 Cards & Free Buy</p>
+            </div>
+          </motion.button>
+
+          {/* 5. 2D RESULT CHART */}
+          <motion.button
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => {
+              soundManager.playClick();
+              setCurrentPage('live_2d');
+            }}
+            className="p-4 rounded-2xl bg-gradient-to-b from-teal-950/80 via-slate-900 to-slate-950 border border-teal-500/40 hover:border-teal-400 transition-all text-left shadow-lg flex flex-col justify-between space-y-3 group cursor-pointer relative overflow-hidden"
+          >
+            <div className="flex items-center justify-between">
+              <div className="p-2.5 rounded-xl bg-teal-500/20 text-teal-400 group-hover:scale-110 transition-transform">
+                <Calendar className="w-5 h-5" />
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-wider text-teal-300 px-2 py-0.5 bg-teal-950 border border-teal-800 rounded-full">
+                HISTORY
+              </span>
+            </div>
+            <div>
+              <h3 className="text-xs font-black text-white group-hover:text-teal-300 transition-colors uppercase">
+                5. 2D CHART
+              </h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">Full Day Results & Calendar</p>
+            </div>
+          </motion.button>
+
+          {/* 6. 3D RESULT CHART */}
+          <motion.button
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => {
+              soundManager.playClick();
+              setCurrentPage('live_3d');
+            }}
+            className="p-4 rounded-2xl bg-gradient-to-b from-rose-950/80 via-slate-900 to-slate-950 border border-rose-500/40 hover:border-rose-400 transition-all text-left shadow-lg flex flex-col justify-between space-y-3 group cursor-pointer relative overflow-hidden"
+          >
+            <div className="flex items-center justify-between">
+              <div className="p-2.5 rounded-xl bg-rose-500/20 text-rose-400 group-hover:scale-110 transition-transform">
+                <Trophy className="w-5 h-5" />
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-wider text-rose-300 px-2 py-0.5 bg-rose-950 border border-rose-800 rounded-full">
+                ABC RESULTS
+              </span>
+            </div>
+            <div>
+              <h3 className="text-xs font-black text-white group-hover:text-rose-300 transition-colors uppercase">
+                6. 3D CHART
+              </h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">A, B, C Results & Search</p>
+            </div>
+          </motion.button>
+        </div>
+      </div>
       
       {/* Game Mode Tab Selector with Framer Motion Glass Styling */}
       <div className="relative p-1.5 rounded-3xl bg-slate-900/90 border border-slate-800 backdrop-blur-2xl shadow-2xl flex items-center gap-2">
@@ -1506,6 +1793,54 @@ export const UserGamePortalView: React.FC = () => {
                 >
                   Submit Deposit
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Notifications Modal */}
+      <AnimatePresence>
+        {showNotificationsModal && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl max-h-[80vh] overflow-y-auto custom-scrollbar"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <h3 className="text-lg font-black text-white flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-purple-400 animate-bounce" />
+                  Player Notifications
+                </h3>
+                <button
+                  onClick={() => setShowNotificationsModal(false)}
+                  className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {(!notifications || notifications.length === 0) ? (
+                  <div className="p-8 text-center text-slate-500 text-xs font-mono">
+                    No active notifications at this time.
+                  </div>
+                ) : (
+                  notifications.map((notif) => (
+                    <div
+                      key={notif.id}
+                      className="p-4 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-white">{notif.title}</span>
+                        <span className="text-[10px] text-slate-500 font-mono">{notif.timestamp}</span>
+                      </div>
+                      <p className="text-xs text-slate-400">{notif.message}</p>
+                    </div>
+                  ))
+                )}
               </div>
             </motion.div>
           </div>
