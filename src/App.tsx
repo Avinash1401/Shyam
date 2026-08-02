@@ -29,6 +29,7 @@ function RoleBasedRootRedirect() {
     return <Navigate to="/player/dashboard" replace />;
   }
 
+  // Default redirect for unauthenticated visitors
   return <Navigate to="/player/login" replace />;
 }
 
