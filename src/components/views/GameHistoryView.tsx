@@ -2,15 +2,19 @@ import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { soundManager } from '../../utils/sound';
 import { motion, AnimatePresence } from 'motion/react';
-import { History, Search, Ticket, X } from 'lucide-react';
+import { History, Search, Ticket, X, FileText } from 'lucide-react';
 import { GameTicket } from '../../types';
+import { AdminPDFReportModal } from '../modals/AdminPDFReportModal';
 
 export const GameHistoryView: React.FC = () => {
-  const { gameTickets } = useAdmin();
+  const { gameTickets, currentUser } = useAdmin();
   const [search, setSearch] = useState('');
   const [gameFilter, setGameFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedTicket, setSelectedTicket] = useState<GameTicket | null>(null);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'SuperAdmin' || !currentUser?.role;
 
   const filteredTickets = gameTickets.filter((t) => {
     const matchesSearch =
@@ -44,7 +48,19 @@ export const GameHistoryView: React.FC = () => {
             </p>
           </div>
         </div>
+
+        {isAdmin && (
+          <button
+            onClick={() => setIsPdfModalOpen(true)}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/20 transition-all"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Download PDF Report</span>
+          </button>
+        )}
       </div>
+
+      <AdminPDFReportModal isOpen={isPdfModalOpen} onClose={() => setIsPdfModalOpen(false)} />
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-2xl">

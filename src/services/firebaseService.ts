@@ -836,6 +836,18 @@ export async function registerFirestoreUser(userData: Omit<UserAccount, 'id' | '
   return { success: true, user: newUser };
 }
 
+export async function updateFirestoreUserAccount(username: string, updates: Partial<UserAccount>) {
+  try {
+    const cleanUsername = username.trim().toLowerCase();
+    const userRef = doc(db, 'users', cleanUsername);
+    await updateDoc(userRef, updates);
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error updating user profile in Firestore:', err);
+    return { success: false, message: err.message };
+  }
+}
+
 export async function placeFirestoreBet(params: {
   username: string;
   gameType: '2D Lottery' | '3D Lottery' | 'Lucky 12' | '12 Card';

@@ -47,6 +47,7 @@ export const Sidebar: React.FC = () => {
     users,
     onlinePlayers,
     depositRequests,
+    currentUser,
   } = useAdmin();
 
   // Collapsible dropdown states
@@ -147,56 +148,62 @@ export const Sidebar: React.FC = () => {
               Management
             </div>
             <div className="space-y-1">
-              <button
-                onClick={() => navigateTo('superdistributer')}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl font-semibold text-sm transition-all ${
-                  isNavActive('superdistributer')
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                    : 'hover:bg-slate-800/60 hover:text-white text-slate-300'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <UserCheck className="w-4 h-4 text-purple-400" />
-                  <span>Super Distributor</span>
-                </div>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-purple-950/80 text-purple-300 border border-purple-800/60 font-mono">
-                  {superDistributers.length}
-                </span>
-              </button>
+              {(currentUser?.role === 'admin' || currentUser?.role === 'SuperAdmin' || !currentUser?.role) && (
+                <button
+                  onClick={() => navigateTo('superdistributer')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl font-semibold text-sm transition-all ${
+                    isNavActive('superdistributer')
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                      : 'hover:bg-slate-800/60 hover:text-white text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <UserCheck className="w-4 h-4 text-purple-400" />
+                    <span>Super Distributor</span>
+                  </div>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-purple-950/80 text-purple-300 border border-purple-800/60 font-mono">
+                    {superDistributers.length}
+                  </span>
+                </button>
+              )}
 
-              <button
-                onClick={() => navigateTo('distributer')}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl font-semibold text-sm transition-all ${
-                  isNavActive('distributer')
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                    : 'hover:bg-slate-800/60 hover:text-white text-slate-300'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <UserPlus className="w-4 h-4 text-blue-400" />
-                  <span>Distributor</span>
-                </div>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-950/80 text-blue-300 border border-blue-800/60 font-mono">
-                  {distributers.length}
-                </span>
-              </button>
+              {(currentUser?.role === 'admin' || currentUser?.role === 'SuperAdmin' || currentUser?.role === 'SuperDistributer' || !currentUser?.role) && (
+                <button
+                  onClick={() => navigateTo('distributer')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl font-semibold text-sm transition-all ${
+                    isNavActive('distributer')
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                      : 'hover:bg-slate-800/60 hover:text-white text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <UserPlus className="w-4 h-4 text-blue-400" />
+                    <span>Distributor</span>
+                  </div>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-950/80 text-blue-300 border border-blue-800/60 font-mono">
+                    {distributers.length}
+                  </span>
+                </button>
+              )}
 
-              <button
-                onClick={() => navigateTo('retailer')}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl font-semibold text-sm transition-all ${
-                  isNavActive('retailer')
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                    : 'hover:bg-slate-800/60 hover:text-white text-slate-300'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Users className="w-4 h-4 text-emerald-400" />
-                  <span>Retailer</span>
-                </div>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 font-mono">
-                  {retailers.length}
-                </span>
-              </button>
+              {(currentUser?.role === 'admin' || currentUser?.role === 'SuperAdmin' || currentUser?.role === 'SuperDistributer' || currentUser?.role === 'Distributer' || !currentUser?.role) && (
+                <button
+                  onClick={() => navigateTo('retailer')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl font-semibold text-sm transition-all ${
+                    isNavActive('retailer')
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                      : 'hover:bg-slate-800/60 hover:text-white text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Users className="w-4 h-4 text-emerald-400" />
+                    <span>Retailer</span>
+                  </div>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 font-mono">
+                    {retailers.length}
+                  </span>
+                </button>
+              )}
 
               <button
                 onClick={() => navigateTo('users')}

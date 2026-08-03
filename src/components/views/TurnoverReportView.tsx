@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
-import { BarChart3, Download, Calendar, Search, TrendingUp, Coins, Briefcase } from 'lucide-react';
-import { TurnoverRecord, UserRole } from '../../types';
+import { BarChart3, Download, Calendar, Search, FileText } from 'lucide-react';
+import { TurnoverRecord } from '../../types';
+import { AdminPDFReportModal } from '../modals/AdminPDFReportModal';
 
 interface TurnoverReportViewProps {
   level: 'Admin' | 'SuperDistributer' | 'Distributer' | 'Retailer' | 'User';
 }
 
 export const TurnoverReportView: React.FC<TurnoverReportViewProps> = ({ level }) => {
-  const { superDistributers, distributers, retailers, users, addToast } = useAdmin();
+  const { superDistributers, distributers, retailers, users, currentUser, addToast } = useAdmin();
 
   const [dateRange, setDateRange] = useState<'today' | 'yesterday' | 'week' | 'month'>('today');
   const [search, setSearch] = useState('');
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+
+  const isAdmin = level === 'Admin' || currentUser?.role === 'admin' || currentUser?.role === 'SuperAdmin' || !currentUser?.role;
 
   // Generate tier-specific turnover data
   const getTurnoverRecords = (): TurnoverRecord[] => {
@@ -97,14 +101,28 @@ export const TurnoverReportView: React.FC<TurnoverReportViewProps> = ({ level })
           </div>
         </div>
 
-        <button
-          onClick={handleExportCSV}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/20"
-        >
-          <Download className="w-4 h-4" />
-          <span>Export Report (CSV)</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <button
+              onClick={() => setIsPdfModalOpen(true)}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/20"
+            >
+              <FileText className="w-4 h-4" />
+              <span>Download PDF Report</span>
+            </button>
+          )}
+
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/20"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export Report (CSV)</span>
+          </button>
+        </div>
       </div>
+
+      <AdminPDFReportModal isOpen={isPdfModalOpen} onClose={() => setIsPdfModalOpen(false)} />
 
       {/* Date Filter & Search */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-slate-900/80 border border-slate-800">

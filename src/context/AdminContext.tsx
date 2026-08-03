@@ -49,6 +49,7 @@ import {
   registerFirestorePlayer,
   getFirestoreUserByAuthUser,
   logoutFirestoreUser,
+  updateFirestoreUserAccount,
   defaultGameControls,
   defaultWinPercentages,
   defaultLucky12Cards,
@@ -247,23 +248,17 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return () => unsubAuth();
   }, []);
 
-  // ---------------------------------------------------------------------------
-  // REALTIME FIRESTORE COLLECTIONS STATE (10 COLLECTIONS)
-  // ---------------------------------------------------------------------------
-  const [users, setUsers] = useState<UserAccount[]>([]);
-  const [superDistributers, setSuperDistributers] = useState<UserAccount[]>([]);
-  const [distributers, setDistributers] = useState<UserAccount[]>([]);
-  const [retailers, setRetailers] = useState<UserAccount[]>([]);
-
-  const [depositRequests, setDepositRequests] = useState<DepositRequest[]>([]);
-  const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
+  // Raw state from Firestore
+  const [rawAllUsers, setRawAllUsers] = useState<UserAccount[]>([]);
+  const [rawDepositRequests, setRawDepositRequests] = useState<DepositRequest[]>([]);
+  const [rawWithdrawalRequests, setRawWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
   const [referralRecords, setReferralRecords] = useState<ReferralRecord[]>([]);
 
-  const [onlinePlayers, setOnlinePlayers] = useState<OnlinePlayer[]>([]);
-  const [gameTickets, setGameTickets] = useState<GameTicket[]>([]);
+  const [rawOnlinePlayers, setRawOnlinePlayers] = useState<OnlinePlayer[]>([]);
+  const [rawGameTickets, setRawGameTickets] = useState<GameTicket[]>([]);
   const [winPercentages, setWinPercentages] = useState<WinPercentageConfig[]>(defaultWinPercentages);
   const [liveResults, setLiveResults] = useState<LiveResultDraw[]>([]);
-  const [transactions, setTransactions] = useState<TransactionRecord[]>([]);
+  const [rawTransactions, setRawTransactions] = useState<TransactionRecord[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [gameControls, setGameControls] = useState<GameControlConfig[]>(defaultGameControls);
   const [lucky12Cards, setLucky12Cards] = useState<Lucky12CardConfig[]>(defaultLucky12Cards);
@@ -271,6 +266,99 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [silenceBettingNotifications, setSilenceBettingNotifications] = useState<boolean>(true);
   const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
+
+  // Active user profile currently logged in
+  const activeProfile = currentUser || adminSession.user || playerSession.user;
+
+  // Multi-Level Hierarchy Filtering Logic
+  const allowedUsernames = React.useMemo(() => {
+    if (!activeProfile) return new Set<string>();
+
+    const role = activeProfile.role;
+    // Admin or SuperAdmin has unrestricted access
+    if (role === 'SuperAdmin' || role === 'admin') {
+      return null;
+    }
+
+    const activeUsername = (activeProfile.username || activeProfile.id || '').toLowerCase().trim();
+    const allowed = new Set<string>([activeUsername]);
+
+    if (role === 'player' || role === 'User') {
+      return allowed; // Player accesses only their own account
+    }
+
+    // Recursive tree walk for SuperDistributer, Distributer, Retailer
+    const queue = [activeUsername];
+    const visited = new Set<string>([activeUsername]);
+
+    while (queue.length > 0) {
+      const parent = queue.shift()!;
+      for (const u of rawAllUsers) {
+        if (u.parentName && u.parentName.toLowerCase().trim() === parent) {
+          const childUsername = (u.username || u.id || '').toLowerCase().trim();
+          if (childUsername && !visited.has(childUsername)) {
+            visited.add(childUsername);
+            allowed.add(childUsername);
+            queue.push(childUsername);
+          }
+        }
+      }
+    }
+
+    return allowed;
+  }, [activeProfile, rawAllUsers]);
+
+  // Derived Filtered Collections
+  const users = React.useMemo(() => {
+    const list = rawAllUsers.filter((u) => u.role === 'User' || u.role === 'player' || (!['SuperAdmin', 'admin', 'SuperDistributer', 'Distributer', 'Retailer'].includes(u.role as string)));
+    if (!allowedUsernames) return list;
+    return list.filter((u) => allowedUsernames.has((u.username || '').toLowerCase()));
+  }, [rawAllUsers, allowedUsernames]);
+
+  const superDistributers = React.useMemo(() => {
+    const list = rawAllUsers.filter((u) => u.role === 'SuperDistributer');
+    if (!allowedUsernames) return list;
+    return list.filter((u) => allowedUsernames.has((u.username || '').toLowerCase()));
+  }, [rawAllUsers, allowedUsernames]);
+
+  const distributers = React.useMemo(() => {
+    const list = rawAllUsers.filter((u) => u.role === 'Distributer');
+    if (!allowedUsernames) return list;
+    return list.filter((u) => allowedUsernames.has((u.username || '').toLowerCase()));
+  }, [rawAllUsers, allowedUsernames]);
+
+  const retailers = React.useMemo(() => {
+    const list = rawAllUsers.filter((u) => u.role === 'Retailer');
+    if (!allowedUsernames) return list;
+    return list.filter((u) => allowedUsernames.has((u.username || '').toLowerCase()));
+  }, [rawAllUsers, allowedUsernames]);
+
+  const gameTickets = React.useMemo(() => {
+    if (!allowedUsernames) return rawGameTickets;
+    return rawGameTickets.filter((t) => allowedUsernames.has((t.username || '').toLowerCase()));
+  }, [rawGameTickets, allowedUsernames]);
+
+  const transactions = React.useMemo(() => {
+    if (!allowedUsernames) return rawTransactions;
+    return rawTransactions.filter(
+      (tx) => allowedUsernames.has((tx.fromUser || '').toLowerCase()) || allowedUsernames.has((tx.toUser || '').toLowerCase())
+    );
+  }, [rawTransactions, allowedUsernames]);
+
+  const depositRequests = React.useMemo(() => {
+    if (!allowedUsernames) return rawDepositRequests;
+    return rawDepositRequests.filter((d) => allowedUsernames.has((d.username || '').toLowerCase()));
+  }, [rawDepositRequests, allowedUsernames]);
+
+  const withdrawalRequests = React.useMemo(() => {
+    if (!allowedUsernames) return rawWithdrawalRequests;
+    return rawWithdrawalRequests.filter((w) => allowedUsernames.has((w.username || '').toLowerCase()));
+  }, [rawWithdrawalRequests, allowedUsernames]);
+
+  const onlinePlayers = React.useMemo(() => {
+    if (!allowedUsernames) return rawOnlinePlayers;
+    return rawOnlinePlayers.filter((p) => allowedUsernames.has((p.username || '').toLowerCase()));
+  }, [rawOnlinePlayers, allowedUsernames]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -292,12 +380,9 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     // 1. Seed database if first time boot
     initializeFirestoreDatabase();
 
-    // 2. Subscribe to `users` collection (updates users, superDistributers, distributers, retailers)
+    // 2. Subscribe to `users` collection
     const unsubUsers = subscribeUsers((fetchedUsers) => {
-      setUsers(fetchedUsers.filter((u) => u.role === 'User' || u.role === 'player' || (!['SuperAdmin', 'admin', 'SuperDistributer', 'Distributer', 'Retailer'].includes(u.role as string))));
-      setSuperDistributers(fetchedUsers.filter((u) => u.role === 'SuperDistributer'));
-      setDistributers(fetchedUsers.filter((u) => u.role === 'Distributer'));
-      setRetailers(fetchedUsers.filter((u) => u.role === 'Retailer'));
+      setRawAllUsers(fetchedUsers);
 
       // Dynamically update logged in user points from Firestore
       if (currentUser) {
@@ -316,7 +401,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     // 3. Subscribe to `bets` collection
     const unsubBets = subscribeBets((fetchedBets) => {
-      setGameTickets(fetchedBets);
+      setRawGameTickets(fetchedBets);
     });
 
     // 4. Subscribe to `wallets` collection
@@ -329,17 +414,17 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     // 5. Subscribe to `transactions` collection
     const unsubTxs = subscribeTransactions((fetchedTxs) => {
-      setTransactions(fetchedTxs);
+      setRawTransactions(fetchedTxs);
     });
 
     // 6. Subscribe to `deposits` collection
     const unsubDeposits = subscribeDeposits((fetchedDeposits) => {
-      setDepositRequests(fetchedDeposits);
+      setRawDepositRequests(fetchedDeposits);
     });
 
     // 7. Subscribe to `withdrawals` collection
     const unsubWithdrawals = subscribeWithdrawals((fetchedWithdrawals) => {
-      setWithdrawalRequests(fetchedWithdrawals);
+      setRawWithdrawalRequests(fetchedWithdrawals);
     });
 
     // 8. Subscribe to `games` collection
@@ -367,7 +452,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     // 12. Subscribe to `online_players` collection
     const unsubOnline = subscribeOnlinePlayers((fetchedOnline) => {
-      setOnlinePlayers(fetchedOnline);
+      setRawOnlinePlayers(fetchedOnline);
     });
 
     return () => {
@@ -603,8 +688,16 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  const updateUserAccount = async (id: string, updates: Partial<UserAccount>) => {
-    addToast('Account Updated', 'User details updated.');
+  const updateUserAccount = async (idOrUsername: string, updates: Partial<UserAccount>) => {
+    const target = rawAllUsers.find((u) => u.id === idOrUsername || u.username === idOrUsername);
+    if (target) {
+      const res = await updateFirestoreUserAccount(target.username, updates);
+      if (res.success) {
+        addToast('Account Updated', `Details for "${target.username}" saved to Firestore.`);
+      } else {
+        addToast('Error', res.message || 'Failed to update user account.', 'error');
+      }
+    }
   };
 
   const adjustPoints = async (username: string, amount: number, type: 'Credit' | 'Debit', remark: string): Promise<boolean> => {
@@ -624,8 +717,15 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  const toggleUserStatus = async (id: string) => {
-    addToast('Status Updated', `User status updated in Firestore.`);
+  const toggleUserStatus = async (idOrUsername: string) => {
+    const target = rawAllUsers.find((u) => u.id === idOrUsername || u.username === idOrUsername);
+    if (target) {
+      const nextStatus = target.status === 'active' ? 'blocked' : 'active';
+      const res = await updateFirestoreUserAccount(target.username, { status: nextStatus });
+      if (res.success) {
+        addToast('Status Updated', `Account "${target.username}" status set to ${nextStatus}.`);
+      }
+    }
   };
 
   const declareWinningResult = async (
@@ -677,8 +777,9 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     addToast('Settings Saved', `Win Percentage rules updated for ${gameType}`);
   };
 
-  const kickOnlinePlayer = (id: string) => {
-    setOnlinePlayers((prev) => prev.filter((p) => p.id !== id));
+  const kickOnlinePlayer = async (id: string) => {
+    await removeOnlinePlayer(id);
+    setRawOnlinePlayers((prev) => prev.filter((p) => p.id !== id));
     addToast('Player Disconnected', `Player removed from live lobby.`, 'warning');
   };
 
@@ -1025,10 +1126,10 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setActivityLogs([]);
       addToast('Logs Cleared', 'System activity audit logs purged.', 'info');
     } else if (type === 'tickets') {
-      setGameTickets((prev) => prev.filter((t) => t.status === 'Pending'));
+      setRawGameTickets((prev) => prev.filter((t) => t.status === 'Pending'));
       addToast('Old Tickets Cleared', 'Completed ticket archives purged.', 'info');
     } else if (type === 'transactions') {
-      setTransactions([]);
+      setRawTransactions([]);
       addToast('Ledger Cleared', 'Historical ledger records purged.', 'info');
     }
   };

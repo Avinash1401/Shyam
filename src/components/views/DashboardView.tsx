@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { DashboardSkeleton } from '../common/Skeleton';
 import { LiveBetsTable } from '../common/LiveBetsTable';
+import { AdminPDFReportModal } from '../modals/AdminPDFReportModal';
 import {
   Users,
   UserCheck,
@@ -37,6 +38,7 @@ import {
   Layers,
   ChevronRight,
   CheckCircle2,
+  FileText,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -120,7 +122,11 @@ export const DashboardView: React.FC = () => {
     transactions,
     isLoadingData,
     refreshData,
+    currentUser,
   } = useAdmin();
+
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'SuperAdmin' || !currentUser?.role;
 
   // Settings Modal State
   const [editingGame, setEditingGame] = useState<GameControlConfig | null>(null);
@@ -290,6 +296,16 @@ export const DashboardView: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
+            {isAdmin && (
+              <button
+                onClick={() => setIsPdfModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-black text-xs shadow-lg shadow-emerald-500/30 transition-all hover:scale-[1.02]"
+              >
+                <FileText className="w-4 h-4 text-white" />
+                <span>Download PDF Report</span>
+              </button>
+            )}
+
             <button
               onClick={() => setCurrentPage('2d_lottery')}
               className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02]"
@@ -1260,6 +1276,8 @@ export const DashboardView: React.FC = () => {
           </div>
         </div>
       )}
+
+      <AdminPDFReportModal isOpen={isPdfModalOpen} onClose={() => setIsPdfModalOpen(false)} />
     </div>
   );
 };

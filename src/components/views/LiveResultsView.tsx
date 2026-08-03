@@ -2,14 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { soundManager } from '../../utils/sound';
 import { motion, AnimatePresence } from 'motion/react';
-import { Radio, Clock, Trophy, Search, Calendar, Filter, Sparkles, Flame, Dices, ArrowUpRight, CheckCircle } from 'lucide-react';
+import { Radio, Clock, Trophy, Search, Calendar, Filter, Sparkles, Flame, Dices, ArrowUpRight, CheckCircle, FileText } from 'lucide-react';
+import { AdminPDFReportModal } from '../modals/AdminPDFReportModal';
 
 interface LiveResultsViewProps {
   gameType: '2D Lottery' | '3D Lottery' | 'Lucky 12';
 }
 
 export const LiveResultsView: React.FC<LiveResultsViewProps> = ({ gameType }) => {
-  const { liveResults } = useAdmin();
+  const { liveResults, currentUser } = useAdmin();
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'SuperAdmin' || !currentUser?.role;
 
   // Search, Calendar, and Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -99,15 +102,29 @@ export const LiveResultsView: React.FC<LiveResultsViewProps> = ({ gameType }) =>
           </div>
         </div>
 
-        {/* Live Round Countdown Pill */}
-        <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-950/90 border border-slate-800/90 shadow-inner shrink-0">
-          <Clock className="w-5 h-5 text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
-          <div>
-            <span className="text-[10px] text-slate-400 uppercase font-bold block leading-none mb-0.5">Next Draw In</span>
-            <span className="font-mono font-black text-amber-400 text-lg tracking-widest">{formatTimer(secondsLeft)}</span>
+        {/* Live Round Countdown Pill & PDF Export */}
+        <div className="flex items-center gap-3">
+          {isAdmin && (
+            <button
+              onClick={() => setIsPdfModalOpen(true)}
+              className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all shrink-0"
+            >
+              <FileText className="w-4 h-4" />
+              <span>Download PDF</span>
+            </button>
+          )}
+
+          <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-950/90 border border-slate-800/90 shadow-inner shrink-0">
+            <Clock className="w-5 h-5 text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
+            <div>
+              <span className="text-[10px] text-slate-400 uppercase font-bold block leading-none mb-0.5">Next Draw In</span>
+              <span className="font-mono font-black text-amber-400 text-lg tracking-widest">{formatTimer(secondsLeft)}</span>
+            </div>
           </div>
         </div>
       </div>
+
+      <AdminPDFReportModal isOpen={isPdfModalOpen} onClose={() => setIsPdfModalOpen(false)} />
 
       {/* QUICK DATE SHORTCUTS & SEARCH BAR */}
       <div className="p-4 rounded-3xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-2xl space-y-3 shadow-2xl">

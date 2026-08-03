@@ -33,6 +33,7 @@ export const ManagementView: React.FC<ManagementViewProps> = ({ role }) => {
     retailers,
     users,
     searchTerm,
+    currentUser,
     addUserAccount,
     updateUserAccount,
     adjustPoints,
@@ -84,6 +85,7 @@ export const ManagementView: React.FC<ManagementViewProps> = ({ role }) => {
   // Form States for New Account
   const [newName, setNewName] = useState('');
   const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [newParent, setNewParent] = useState('');
   const [newPoints, setNewPoints] = useState(0);
   const [newCreditLimit, setNewCreditLimit] = useState(100000);
@@ -120,11 +122,14 @@ export const ManagementView: React.FC<ManagementViewProps> = ({ role }) => {
     e.preventDefault();
     if (!newName || !newUsername) return;
 
+    const defaultParent = currentUser?.username || 'admin';
+
     addUserAccount({
       name: newName,
       username: newUsername,
+      password: newPassword || 'User@123',
       role,
-      parentName: newParent || (role === 'SuperDistributer' ? 'admin' : 'admin'),
+      parentName: newParent || defaultParent,
       points: Number(newPoints),
       creditLimit: Number(newCreditLimit),
       status: 'active',
@@ -135,6 +140,8 @@ export const ManagementView: React.FC<ManagementViewProps> = ({ role }) => {
     setIsAddModalOpen(false);
     setNewName('');
     setNewUsername('');
+    setNewPassword('');
+    setNewParent('');
     setNewPoints(0);
   };
 
@@ -432,13 +439,25 @@ export const ManagementView: React.FC<ManagementViewProps> = ({ role }) => {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Username</label>
+                <label className="block text-slate-300 font-semibold mb-1">Username (Login ID)</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. agent_user1"
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-xl px-3 py-2 text-white focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Login Password</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Assign initial password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-xl px-3 py-2 text-white focus:outline-none"
                 />
               </div>
