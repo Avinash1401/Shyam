@@ -26,12 +26,14 @@ export const PlayerWalletView: React.FC = () => {
     depositRequests,
     withdrawalRequests,
     gameTickets,
+    transactions,
     submitDepositRequest,
     submitWithdrawalRequest,
     addToast,
   } = useAdmin();
 
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw' | 'history' | 'winning'>('deposit');
+  const [betFilter, setBetFilter] = useState<'all' | 'won' | 'lost'>('all');
 
   // Active player username
   const activeUser = playerSession?.isLoggedIn && playerSession.user ? playerSession.user : currentUser;
@@ -49,8 +51,11 @@ export const PlayerWalletView: React.FC = () => {
 
   const myDeposits = depositRequests.filter((d) => d.username.toLowerCase() === activeUsername.toLowerCase());
   const myWithdrawals = withdrawalRequests.filter((w) => w.username.toLowerCase() === activeUsername.toLowerCase());
-  const myWinningTickets = gameTickets.filter(
-    (t) => t.username.toLowerCase() === activeUsername.toLowerCase() && (t.status === 'Won' || t.winAmount > 0)
+  const myTickets = gameTickets.filter((t) => t.username.toLowerCase() === activeUsername.toLowerCase());
+  const myWinningTickets = myTickets.filter((t) => t.status === 'Won' || t.winAmount > 0);
+  const myLosingTickets = myTickets.filter((t) => t.status === 'Lost');
+  const myTransactions = transactions.filter(
+    (tx) => tx.fromUser.toLowerCase() === activeUsername.toLowerCase() || tx.toUser.toLowerCase() === activeUsername.toLowerCase()
   );
 
   const handleDepositSubmit = async (e: React.FormEvent) => {
@@ -366,14 +371,160 @@ export const PlayerWalletView: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 3: TRANSACTION HISTORY */}
+          {/* TAB 3: TRANSACTION & BET HISTORY */}
           {activeTab === 'history' && (
             <div className="space-y-6">
+              {/* Wallet Point Transactions Ledger */}
+              <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 backdrop-blur-2xl shadow-2xl space-y-4">
+                <h3 className="text-sm font-black text-white flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Receipt className="w-4 h-4 text-cyan-400" />
+                    <span>Wallet Transaction History</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono font-bold">
+                    {myTransactions.length} Record(s)
+                  </span>
+                </h3>
+
+                {myTransactions.length === 0 ? (
+                  <p className="text-xs text-slate-500 py-6 text-center">No wallet transactions recorded yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-950 text-slate-400 border-b border-slate-800">
+                        <tr>
+                          <th className="p-3">Ref ID</th>
+                          <th className="p-3">Type</th>
+                          <th className="p-3">Amount</th>
+                          <th className="p-3">Balance After</th>
+                          <th className="p-3">Remark</th>
+                          <th className="p-3">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800">
+                        {myTransactions.map((tx) => (
+                          <tr key={tx.id} className="hover:bg-slate-800/40">
+                            <td className="p-3 font-mono font-bold text-cyan-400">{tx.refId || tx.id}</td>
+                            <td className="p-3">
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                  tx.type === 'Credit'
+                                    ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                                    : 'bg-rose-950 text-rose-300 border-rose-800'
+                                }`}
+                              >
+                                {tx.type}
+                              </span>
+                            </td>
+                            <td className={`p-3 font-mono font-bold ${tx.type === 'Credit' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                              {tx.type === 'Credit' ? '+' : '-'}₹{tx.amount.toLocaleString()}
+                            </td>
+                            <td className="p-3 font-mono text-white font-bold">₹{tx.balanceAfter.toLocaleString()}</td>
+                            <td className="p-3 text-slate-300 max-w-xs truncate">{tx.remark}</td>
+                            <td className="p-3 text-slate-500 font-mono text-[11px]">{tx.timestamp}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Complete Bet History (All, Won, Lost) */}
+              <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 backdrop-blur-2xl shadow-2xl space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <h3 className="text-sm font-black text-white flex items-center gap-2">
+                    <History className="w-4 h-4 text-amber-400" />
+                    <span>My Complete Bet Ledger</span>
+                  </h3>
+
+                  <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-[11px] font-bold">
+                    <button
+                      onClick={() => setBetFilter('all')}
+                      className={`px-3 py-1 rounded-lg transition-colors ${
+                        betFilter === 'all' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'text-slate-400'
+                      }`}
+                    >
+                      All ({myTickets.length})
+                    </button>
+                    <button
+                      onClick={() => setBetFilter('won')}
+                      className={`px-3 py-1 rounded-lg transition-colors ${
+                        betFilter === 'won' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'text-slate-400'
+                      }`}
+                    >
+                      Won ({myWinningTickets.length})
+                    </button>
+                    <button
+                      onClick={() => setBetFilter('lost')}
+                      className={`px-3 py-1 rounded-lg transition-colors ${
+                        betFilter === 'lost' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'text-slate-400'
+                      }`}
+                    >
+                      Lost ({myLosingTickets.length})
+                    </button>
+                  </div>
+                </div>
+
+                {myTickets.length === 0 ? (
+                  <p className="text-xs text-slate-500 py-6 text-center">No bets placed yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-950 text-slate-400 border-b border-slate-800">
+                        <tr>
+                          <th className="p-3">Ticket #</th>
+                          <th className="p-3">Game</th>
+                          <th className="p-3">Selected Numbers</th>
+                          <th className="p-3">Amount</th>
+                          <th className="p-3">Status</th>
+                          <th className="p-3">Payout</th>
+                          <th className="p-3">Time</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800">
+                        {myTickets
+                          .filter((t) => {
+                            if (betFilter === 'won') return t.status === 'Won' || t.winAmount > 0;
+                            if (betFilter === 'lost') return t.status === 'Lost';
+                            return true;
+                          })
+                          .map((t) => (
+                            <tr key={t.id} className="hover:bg-slate-800/40">
+                              <td className="p-3 font-mono font-bold text-cyan-400">#{t.ticketNo}</td>
+                              <td className="p-3 font-bold text-white">{t.gameType}</td>
+                              <td className="p-3 font-mono text-slate-300">{t.selectedNumbers.join(', ')}</td>
+                              <td className="p-3 font-mono font-bold text-amber-400">₹{t.betAmount.toLocaleString()}</td>
+                              <td className="p-3">
+                                <span
+                                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                    t.status === 'Won'
+                                      ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                                      : t.status === 'Lost'
+                                      ? 'bg-rose-950 text-rose-300 border-rose-800'
+                                      : 'bg-amber-950 text-amber-300 border-amber-800 animate-pulse'
+                                  }`}
+                                >
+                                  {t.status}
+                                </span>
+                              </td>
+                              <td className="p-3 font-mono font-bold text-emerald-400">
+                                {t.winAmount > 0 ? `+₹${t.winAmount.toLocaleString()}` : '₹0'}
+                              </td>
+                              <td className="p-3 text-slate-500 font-mono text-[11px]">{t.createdAt}</td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
               {/* Deposit History */}
               <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 backdrop-blur-2xl shadow-2xl space-y-4">
                 <h3 className="text-sm font-black text-white flex items-center gap-2">
                   <ArrowDownRight className="w-4 h-4 text-emerald-400" />
-                  <span>My Deposit History</span>
+                  <span>My Deposit Requests</span>
                 </h3>
 
                 {myDeposits.length === 0 ? (
@@ -424,7 +575,7 @@ export const PlayerWalletView: React.FC = () => {
               <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 backdrop-blur-2xl shadow-2xl space-y-4">
                 <h3 className="text-sm font-black text-white flex items-center gap-2">
                   <ArrowUpRight className="w-4 h-4 text-amber-400" />
-                  <span>My Withdrawal History</span>
+                  <span>My Withdrawal Requests</span>
                 </h3>
 
                 {myWithdrawals.length === 0 ? (

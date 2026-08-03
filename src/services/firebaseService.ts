@@ -19,6 +19,7 @@ import {
   User as FirebaseUser,
 } from 'firebase/auth';
 import { db, auth } from '../lib/firebase';
+import { getBettingScheduleStatus } from '../utils/timeUtils';
 import {
   UserAccount,
   OnlinePlayer,
@@ -846,6 +847,21 @@ export async function placeFirestoreBet(params: {
 }) {
   const { username, gameType, selectedNumbers, betAmount, drawTime, userRole = 'User', parentName = 'Direct Player' } = params;
   const cleanUsername = username.trim().toLowerCase();
+
+  // Validate schedule (09:00 AM - 10:00 PM IST)
+  const scheduleStatus = getBettingScheduleStatus();
+  if (!scheduleStatus.isOpen) {
+    throw new Error(`Betting is closed! ${scheduleStatus.reason}`);
+  }
+
+  // Check if game betting is locked
+  const gameDocSnap = await getDoc(doc(db, 'games', gameType));
+  if (gameDocSnap.exists()) {
+    const gameData = gameDocSnap.data();
+    if (gameData.bettingLocked) {
+      throw new Error(`Betting is temporarily locked for ${gameType} draw calculation.`);
+    }
+  }
 
   // Find user document reference
   let targetDocId = username;

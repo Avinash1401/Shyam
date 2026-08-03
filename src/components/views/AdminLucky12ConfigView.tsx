@@ -218,7 +218,7 @@ export const AdminLucky12ConfigView: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {lucky12Cards.map((card) => {
+          {lucky12Cards.map((card, idx) => {
             const temp = editCardMap[card.id] || {};
             const currentName = temp.name !== undefined ? temp.name : card.name;
             const currentIcon = temp.icon !== undefined ? temp.icon : card.icon;
@@ -226,10 +226,11 @@ export const AdminLucky12ConfigView: React.FC = () => {
             const currentMult = temp.multiplier !== undefined ? temp.multiplier : card.multiplier;
             const currentStatus = temp.status !== undefined ? temp.status : card.status;
             const hasChanges = Object.keys(temp).length > 0;
+            const cardKey = card.id || `lucky12-card-${card.cardNo || idx}-${idx}`;
 
             return (
               <div
-                key={card.id}
+                key={cardKey}
                 className={`bg-slate-900 border rounded-3xl p-4 shadow-xl transition-all space-y-4 relative ${
                   hasChanges
                     ? 'border-amber-500/60 shadow-amber-500/10'

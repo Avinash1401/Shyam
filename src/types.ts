@@ -230,6 +230,8 @@ export type NavigationPage =
   | 'declare_lucky12'
   | 'user_game_portal'
   | 'live_bets_dashboard'
+  | '2d_lottery'
+  | '2d_lottery_admin'
   | 'result_settings'
   | 'source_code_export'
   | 'profile'

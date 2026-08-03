@@ -30,7 +30,7 @@ export const TurnoverReportView: React.FC<TurnoverReportViewProps> = ({ level })
       return [
         {
           id: 'to-admin-1',
-          accountName: 'Shyam Panel Master Network',
+          accountName: 'Shyam111 Master Network',
           role: 'SuperAdmin',
           totalPlay: 185400,
           totalWin: 124200,

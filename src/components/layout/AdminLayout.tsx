@@ -25,12 +25,21 @@ import { SourceCodeExportView } from '../views/SourceCodeExportView';
 import { AdminDepositsView } from '../views/AdminDepositsView';
 import { AdminReferralsView } from '../views/AdminReferralsView';
 import { LiveBetsDashboardView } from '../views/LiveBetsDashboardView';
+import { Admin2DLotteryView } from '../views/Admin2DLotteryView';
+import { AdminLucky12View } from '../views/AdminLucky12View';
+import { Admin3DLotteryView } from '../views/Admin3DLotteryView';
 
 // View Renderer Component for Admin
 export const AdminViewRenderer: React.FC<{ currentPage: string }> = ({ currentPage }) => {
   switch (currentPage) {
     case 'dashboard':
       return <DashboardView />;
+    case '2d_lottery':
+    case '2d_lottery_admin':
+      return <Admin2DLotteryView />;
+    case 'lucky12_admin':
+    case 'lucky12_dashboard':
+      return <AdminLucky12View />;
     case 'live_bets_dashboard':
       return <LiveBetsDashboardView />;
     case 'superdistributer':
@@ -78,13 +87,17 @@ export const AdminViewRenderer: React.FC<{ currentPage: string }> = ({ currentPa
     case 'history_cancel_tickets':
       return <OthersActivityView section="cancel_tickets" />;
     case 'declare_2d':
-    case 'declare_3d':
-    case 'declare_lucky12':
       return <WinningDeclareView />;
+    case 'declare_3d':
+    case '3d_lottery':
+    case '3d_lottery_admin':
+    case 'admin_3d':
+      return <Admin3DLotteryView />;
     case 'result_settings':
       return <ResultSettingsView />;
+    case 'declare_lucky12':
     case 'admin_lucky12_config':
-      return <AdminLucky12ConfigView />;
+      return <AdminLucky12View />;
     case 'source_code_export':
       return <SourceCodeExportView />;
     case 'profile':
@@ -122,7 +135,7 @@ export const AdminLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex font-sans selection:bg-cyan-500 selection:text-slate-950 relative">
+    <div className="min-h-screen bg-[#0B1120] text-slate-100 flex font-sans selection:bg-emerald-500 selection:text-slate-950 relative">
       {/* Forced Password Change Modal for First Admin Login */}
       {mustChangeAdminPassword && <ForcePasswordChangeModal />}
 

@@ -65,7 +65,7 @@ export const PlayerRegisterPage: React.FC = () => {
             <Gamepad2 className="w-7 h-7" />
           </div>
           <h1 className="text-xl font-black text-white">Create Player Account</h1>
-          <p className="text-xs text-slate-400">Join Shyam Game & Receive ₹500 Free Bonus</p>
+          <p className="text-xs text-slate-400">Join Shyam111 & Receive ₹500 Free Bonus</p>
         </div>
 
         {errorMsg && (

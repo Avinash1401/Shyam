@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import { getBettingScheduleStatus } from '../utils/timeUtils';
 import {
   UserAccount,
   OnlinePlayer,
@@ -534,13 +535,25 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  // Live Timer Loop & Auto Result Dispatcher
+  // Live Timer Loop & Auto Result Dispatcher with Server Schedule Enforcement
   useEffect(() => {
     const interval = setInterval(() => {
+      const scheduleStatus = getBettingScheduleStatus();
+
       setGameControls((prevControls) =>
         prevControls.map((gc) => {
           if (gc.status !== 'Active') return gc;
 
+          // Outside betting hours (10:00 PM to 09:00 AM IST)
+          if (!scheduleStatus.isOpen) {
+            return {
+              ...gc,
+              secondsRemaining: scheduleStatus.secondsToNextEvent,
+              bettingLocked: true,
+            };
+          }
+
+          // Inside active betting hours (09:00 AM to 10:00 PM IST)
           if (gc.secondsRemaining <= 1) {
             if (gc.mode === 'Auto') {
               const result = generateRandomResult(gc.gameType);
@@ -570,6 +583,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           return {
             ...gc,
             secondsRemaining: gc.secondsRemaining - 1,
+            bettingLocked: false,
           };
         })
       );
@@ -826,7 +840,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setCurrentUser(res.user);
         setActiveRole('Player');
         setCurrentPage('user_game_portal');
-        addToast('Account Registered!', `Welcome to Shyam Panel, ${name}! Your account has been created.`, 'success');
+        addToast('Account Registered!', `Welcome to Shyam111, ${name}! Your account has been created.`, 'success');
         return { success: true, message: 'Registration successful!' };
       } else {
         addToast('Registration Failed', res.message || 'Could not register account.', 'error');
@@ -883,7 +897,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setPlayerSession({ isLoggedIn: false, user: null });
     setIsLoggedIn(false);
     setCurrentUser(null);
-    addToast('Logged Out', 'You have logged out of Shyam Game.', 'info');
+    addToast('Logged Out', 'You have logged out of Shyam111.', 'info');
   };
 
   const logout = async () => {

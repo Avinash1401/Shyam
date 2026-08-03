@@ -62,6 +62,8 @@ export const UserGamePortalView: React.FC = () => {
   // Player authentication state
   const isPlayerAuth = (isLoggedIn && userRole === 'player') || Boolean(playerSession?.isLoggedIn);
 
+  const last3DResult = liveResults.find((r) => r.gameType === '3D Lottery');
+
   // Active user account for player session
   const activeUser =
     playerSession?.isLoggedIn && playerSession.user
@@ -91,7 +93,7 @@ export const UserGamePortalView: React.FC = () => {
   const [selected2DNumbers, setSelected2DNumbers] = useState<string[]>([]);
   const [searchQuery2D, setSearchQuery2D] = useState<string>('');
   const [active2DRange, setActive2DRange] = useState<string>('all');
-  const [selected2DRangeBlock, setSelected2DRangeBlock] = useState<string>('5000-5099');
+  const [selected2DRangeBlock, setSelected2DRangeBlock] = useState<string>('1000-1099');
   const [boRowValues, setBoRowValues] = useState<{ [rowKey: string]: string }>({});
   const [quickFilter2D, setQuickFilter2D] = useState<string>('All');
 
@@ -685,8 +687,8 @@ export const UserGamePortalView: React.FC = () => {
                 
                 {/* Last Draw Badge */}
                 <div className="px-4 py-2 rounded-xl bg-slate-950/90 border border-slate-800 text-center shrink-0 w-full md:w-auto">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Last Draw</div>
-                  <div className="font-mono text-xs font-black text-amber-400">10:00 PM</div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Last Draw ({last3DResult?.drawTime || '10:00 PM'})</div>
+                  <div className="font-mono text-sm font-black text-amber-400">{last3DResult?.winningResult || '180'}</div>
                 </div>
 
                 {/* Title: Games 3D */}
@@ -1133,7 +1135,7 @@ export const UserGamePortalView: React.FC = () => {
 
                 {/* Top Winning Number Cards Bar */}
                 <div className="flex items-center gap-1.5 overflow-x-auto w-full custom-scrollbar pb-1 md:pb-0">
-                  {['5042', '5159', '5288', '5317', '5428', '5580', '5604', '5749', '5819', '5951'].map((num, i) => (
+                  {['1042', '1159', '1288', '1317', '1428', '1580', '1604', '1749', '1819', '1951'].map((num, i) => (
                     <div
                       key={`winner-${i}`}
                       className="px-3.5 py-2 rounded-xl bg-gradient-to-b from-orange-500 to-amber-600 text-slate-950 font-mono font-black text-xs shadow-md shrink-0 border border-amber-300/40 tracking-wider hover:scale-105 transition-all cursor-pointer"
@@ -1287,7 +1289,7 @@ export const UserGamePortalView: React.FC = () => {
                         onClick={() => {
                           soundManager.playClick();
                           setQuickFilter2D(flt);
-                          const base = parseInt(selected2DRangeBlock.split('-')[0], 10) || 5000;
+                          const base = parseInt(selected2DRangeBlock.split('-')[0], 10) || 1000;
                           let nums: string[] = [];
                           if (flt === '10-19') {
                             nums = Array.from({ length: 10 }, (_, i) => (base + 10 + i).toString());
@@ -1328,17 +1330,37 @@ export const UserGamePortalView: React.FC = () => {
                     <Layers className="w-3.5 h-3.5" />
                   </div>
 
+                  <button
+                    onClick={() => {
+                      soundManager.playClick();
+                      setSelected2DRangeBlock('1000-1099');
+                      setSelected2DNumbers([]);
+                    }}
+                    className={`w-full py-2 px-2.5 rounded-xl text-xs font-mono font-bold flex items-center gap-2 border transition-all ${
+                      selected2DRangeBlock === 'All'
+                        ? 'bg-gradient-to-r from-purple-900 to-indigo-900 border-purple-400 text-white shadow-lg shadow-purple-900/40'
+                        : 'bg-slate-950/80 border-slate-800/80 text-slate-300 hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
+                      selected2DRangeBlock === 'All' ? 'bg-amber-400 border-amber-300 text-slate-950' : 'border-slate-700 bg-slate-900'
+                    }`}>
+                      {selected2DRangeBlock === 'All' && <CheckCircle2 className="w-3 h-3" />}
+                    </div>
+                    <span>All</span>
+                  </button>
+
                   {[
-                    '5000-5099',
-                    '5100-5199',
-                    '5200-5299',
-                    '5300-5399',
-                    '5400-5499',
-                    '5500-5599',
-                    '5600-5699',
-                    '5700-5799',
-                    '5800-5899',
-                    '5900-5999',
+                    '1000-1099',
+                    '1100-1199',
+                    '1200-1299',
+                    '1300-1399',
+                    '1400-1499',
+                    '1500-1599',
+                    '1600-1699',
+                    '1700-1799',
+                    '1800-1899',
+                    '1900-1999',
                   ].map((rangeStr) => {
                     const isSelected = selected2DRangeBlock === rangeStr;
                     return (
@@ -1369,7 +1391,7 @@ export const UserGamePortalView: React.FC = () => {
                 {/* RIGHT: RESPONSIVE NUMBER GRID TABLE */}
                 <div className="md:col-span-9 lg:col-span-10 p-3 rounded-2xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-2xl shadow-2xl overflow-x-auto custom-scrollbar">
                   {(() => {
-                    const base2D = parseInt(selected2DRangeBlock.split('-')[0], 10) || 5000;
+                    const base2D = parseInt(selected2DRangeBlock.split('-')[0], 10) || 1000;
                     const rows = ['F0', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9'];
 
                     return (
@@ -1378,13 +1400,14 @@ export const UserGamePortalView: React.FC = () => {
                           <tr className="border-b border-slate-800 text-slate-400 font-extrabold text-[11px] uppercase">
                             <th className="py-2 px-1 text-purple-400">BLOCK</th>
                             <th className="py-2 px-1 text-slate-300">BO</th>
-                            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((colIdx) => (
+                            <th className="py-2 px-1 text-amber-300">B0</th>
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((colIdx) => (
                               <th key={`col-head-${colIdx}`} className="py-2 px-1 text-amber-300">
                                 {colIdx}
                               </th>
                             ))}
-                            <th className="py-2 px-1 text-purple-300">C</th>
-                            <th className="py-2 px-1 text-purple-300">F</th>
+                            <th className="py-2 px-1 text-purple-300">Qty</th>
+                            <th className="py-2 px-1 text-purple-300">Pt.</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800/60">
@@ -1499,7 +1522,7 @@ export const UserGamePortalView: React.FC = () => {
                   onClick={() => {
                     soundManager.playClick();
                     if (selected2DNumbers.length === 0) {
-                      const base = parseInt(selected2DRangeBlock.split('-')[0], 10) || 5000;
+                      const base = parseInt(selected2DRangeBlock.split('-')[0], 10) || 1000;
                       const rand = (base + Math.floor(Math.random() * 100)).toString();
                       setSelected2DNumbers([rand]);
                       addToast('Free Buy Activated!', `Selected random number ${rand} with free points!`, 'success');
